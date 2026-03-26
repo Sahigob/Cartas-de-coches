@@ -2,7 +2,7 @@
 const firebaseConfig = {
   apiKey: "AIzaSyDvoniQYLcoBcL0F_n_KoGo4ZYLAKwSooA",
   authDomain: "carta-de-coches.firebaseapp.com",
-  databaseURL: "https://carta-de-coches-default-rtdb.firebaseio.com",
+  databaseURL: "https://carta-de-coches-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "carta-de-coches",
   storageBucket: "carta-de-coches.appspot.com",
   messagingSenderId: "785928361183",
@@ -20,6 +20,13 @@ let partidaId = prompt("Ingresa código de partida o deja en blanco para crear:"
 let turnoActual = "";
 let cartas = [];
 
+// Cartas iniciales
+const cartasBase = [
+  {id:1, marca:"Ferrari", modelo:"LaFerrari", velocidad:350, caballos:963, peso:1585, imagenUrl:"https://i.imgur.com/1.jpg"},
+  {id:2, marca:"Lamborghini", modelo:"Aventador", velocidad:355, caballos:730, peso:1575, imagenUrl:"https://i.imgur.com/2.jpg"},
+  {id:3, marca:"Porsche", modelo:"911 GT3", velocidad:318, caballos:502, peso:1430, imagenUrl:"https://i.imgur.com/3.jpg"}
+];
+
 // Autenticación anónima
 auth.signInAnonymously().then(user => {
   jugadorId = user.user.uid;
@@ -30,14 +37,12 @@ auth.signInAnonymously().then(user => {
 // Crear partida
 function crearPartida() {
   partidaId = Math.random().toString(36).substr(2,5).toUpperCase();
-  cartas = [
-    {id:1, marca:"Ferrari", modelo:"LaFerrari", velocidad:350, caballos:963, peso:1585, imagenUrl:"https://i.imgur.com/1.jpg"},
-    {id:2, marca:"Lamborghini", modelo:"Aventador", velocidad:355, caballos:730, peso:1575, imagenUrl:"https://i.imgur.com/2.jpg"},
-    {id:3, marca:"Porsche", modelo:"911 GT3", velocidad:318, caballos:502, peso:1430, imagenUrl:"https://i.imgur.com/3.jpg"}
-  ];
 
+  // Se crea el nodo de partida con el primer jugador
   db.ref("partidas/" + partidaId).set({
-    jugadores: {[jugadorId]: {cartas: cartas, nombre:"Jugador1"}},
+    jugadores: {
+      [jugadorId]: {cartas: cartasBase, nombre:"Jugador1"}
+    },
     turno: jugadorId,
     elecciones: {}
   });
@@ -48,10 +53,17 @@ function crearPartida() {
 
 // Unirse a partida
 function unirsePartida(id) {
-  db.ref("partidas/" + id + "/jugadores/" + jugadorId).set({
-    cartas: [],
-    nombre:"Jugador" + Math.floor(Math.random()*100)
+  const jugadorNombre = "Jugador" + Math.floor(Math.random()*100);
+
+  const jugadorRef = db.ref("partidas/" + id + "/jugadores/" + jugadorId);
+
+  jugadorRef.once("value").then(snapshot => {
+    if(!snapshot.exists()){
+      // Asignamos las mismas cartas iniciales al nuevo jugador
+      jugadorRef.set({cartas: cartasBase, nombre: jugadorNombre});
+    }
   });
+
   partidaId = id;
   escucharPartida();
 }
@@ -83,7 +95,7 @@ function mostrarCartas(lista) {
     const div = document.createElement("div");
     div.className = "carta";
     div.innerHTML = `
-      <img src="${c.imagenUrl}" alt="${c.marca} ${c.modelo}" width="200">
+      <img src="${c.imagenUrl}" alt="${c.marca} ${c.modelo}">
       <strong>${c.marca} ${c.modelo}</strong><br>
       Vel: ${c.velocidad} km/h<br>
       Cab: ${c.caballos} CV<br>
@@ -119,6 +131,7 @@ function compararAtributos(elecciones, jugadores) {
   resultados.sort((a,b)=>b.valor - a.valor);
   const ganador = resultados[0].jid;
 
+  // Repartir cartas perdedoras al ganador
   for(const r of resultados){
     if(r.jid !== ganador){
       jugadores[ganador].cartas.push(r.carta);
@@ -130,5 +143,5 @@ function compararAtributos(elecciones, jugadores) {
   db.ref("partidas/" + partidaId + "/turno").set(ganador);
   db.ref("partidas/" + partidaId + "/elecciones").remove();
 
-  document.getElementById("ultimogano").innerText = "Última ronda: Ganador = " + ganador;
+  document.getElementById("ultimogano").innerText = "Última ronda: Ganador = " + jugadores[ganador].nombre;
 }
