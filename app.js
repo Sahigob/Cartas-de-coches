@@ -51,21 +51,32 @@ function crearPartida() {
   alert("Partida creada: " + partidaId + "\nComparte este código con otros jugadores.");
 }
 
-// Unirse a partida
+// Unirse a partida (corregido)
 function unirsePartida(id) {
   const jugadorNombre = "Jugador" + Math.floor(Math.random()*100);
+  const partidaRef = db.ref("partidas/" + id);
 
-  const jugadorRef = db.ref("partidas/" + id + "/jugadores/" + jugadorId);
-
-  jugadorRef.once("value").then(snapshot => {
-    if(!snapshot.exists()){
-      // Asignamos las mismas cartas iniciales al nuevo jugador
-      jugadorRef.set({cartas: cartasBase, nombre: jugadorNombre});
+  partidaRef.once("value").then(snapshot => {
+    const data = snapshot.val();
+    if(!data) {
+      alert("La partida no existe.");
+      return;
     }
-  });
 
-  partidaId = id;
-  escucharPartida();
+    // Añadir jugador nuevo si no existía
+    if(!data.jugadores[jugadorId]){
+      data.jugadores[jugadorId] = {cartas: cartasBase, nombre: jugadorNombre};
+      partidaRef.child("jugadores").set(data.jugadores);
+
+      // Si no existe turnoActual, asignamos al primer jugador
+      if(!data.turno) {
+        partidaRef.child("turno").set(jugadorId);
+      }
+    }
+
+    partidaId = id;
+    escucharPartida();
+  });
 }
 
 // Escuchar cambios en la partida
@@ -78,10 +89,11 @@ function escucharPartida() {
     cartas = data.jugadores[jugadorId]?.cartas || [];
     mostrarCartas(cartas);
 
-    document.getElementById("info").innerText = "Turno actual: " + turnoActual;
+    const nombreTurno = data.jugadores[turnoActual]?.nombre || turnoActual;
+    document.getElementById("info").innerText = "Turno actual: " + nombreTurno;
 
     const elecciones = data.elecciones || {};
-    if(Object.keys(elecciones).length >= 3){
+    if(Object.keys(elecciones).length >= Object.keys(data.jugadores).length){
       compararAtributos(elecciones, data.jugadores);
     }
   });
