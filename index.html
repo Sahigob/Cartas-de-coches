@@ -4,23 +4,21 @@
   <meta charset="UTF-8">
   <title>Juego de Cartas de Coches - 3 Jugadores</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 </head>
 <body>
   <h1>Juego de Cartas de Coches - 3 Jugadores</h1>
 
-  <!-- Contenedor de cartas -->
-  <div id="cartas"></div>
+  <div id="menu">
+    <button onclick="crearPartida()">Crear Partida</button>
+    <input type="number" id="codigoPartida" placeholder="Código de Partida">
+    <button onclick="unirsePartida(document.getElementById('codigoPartida').value)">Unirse a Partida</button>
+  </div>
 
-  <!-- Información de la partida -->
-  <div id="info" style="margin-top:20px;font-weight:bold;"></div>
-  <div id="ultimogano" style="margin-top:10px;color:green;font-weight:bold;"></div>
+  <div id="cartaJugador"></div>
 
-  <!-- Firebase SDKs Compat -->
-  <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.6.0/firebase-database-compat.js"></script>
-
-  <!-- Nuestro JS -->
   <script src="app.js"></script>
 </body>
 </html>
