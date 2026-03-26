@@ -1,4 +1,6 @@
-// Configuración Firebase
+// =======================
+// FIREBASE
+// =======================
 const firebaseConfig = {
   apiKey: "AIzaSyDvoniQYLcoBcL0F_n_KoGo4ZYLAKwSooA",
   authDomain: "carta-de-coches.firebaseapp.com",
@@ -9,23 +11,22 @@ const firebaseConfig = {
   appId: "1:785928361183:web:4af4c916880d4af760056a"
 };
 
-// Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// -------------------------------------
-// Variables globales
-let jugadorId = "jugador" + Math.floor(Math.random()*1000); // ID único jugador
+// =======================
+// VARIABLES
+// =======================
+let jugadorId = null;
 let partidaId = null;
 let turnoActual = null;
 let cartasJugador = [];
-let cartasOponentes = [];
-let numJugadores = 2; // Cambiar a 3 si quieres jugar a 3 jugadores
+let numJugadores = 2;
 
-// -------------------------------------
-// 36 cartas deportivas de ejemplo
+// =======================
+// TUS 36 CARTAS (NO TOCAR)
 const cartasBase = [
-   {id:1, marca:"Ferrari", modelo:"SF90", cilindrada:3990, longitud:4710, anchura:1972, altura:1180, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:12.0, precio:450000, imagenUrl:"https://i.imgur.com/ferrari-sf90.jpg"},
+    {id:1, marca:"Ferrari", modelo:"SF90", cilindrada:3990, longitud:4710, anchura:1972, altura:1180, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:12.0, precio:450000, imagenUrl:"https://i.imgur.com/ferrari-sf90.jpg"},
   {id:2, marca:"Lamborghini", modelo:"Aventador SVJ", cilindrada:6498, longitud:4980, anchura:2030, altura:1136, cilindros:12, CV:770, maxKMH:350, peso:1575, aceleracion:2.8, consumo:15.0, precio:517000, imagenUrl:"https://i.imgur.com/lamborghini-aventador.jpg"},
   {id:3, marca:"Porsche", modelo:"911 GT3", cilindrada:3996, longitud:4579, anchura:1852, altura:1250, cilindros:6, CV:502, maxKMH:318, peso:1430, aceleracion:3.4, consumo:13.0, precio:180000, imagenUrl:"https://i.imgur.com/porsche-911gt3.jpg"},
   {id:4, marca:"McLaren", modelo:"720S", cilindrada:3994, longitud:4543, anchura:1946, altura:1199, cilindros:8, CV:720, maxKMH:341, peso:1419, aceleracion:2.9, consumo:11.8, precio:310000, imagenUrl:"https://i.imgur.com/mclaren-720s.jpg"},
@@ -63,132 +64,148 @@ const cartasBase = [
   {id:36, marca:"Alfa Romeo", modelo:"4C", cilindrada:1742, longitud:3992, anchura:1870, altura:1180, cilindros:4, CV:240, maxKMH:258, peso:895, aceleracion:4.5, consumo:7.5, precio:70000, imagenUrl:"https://i.imgur.com/alfa-4c.jpg"}
 ];
 
-// -------------------------------------
-// Funciones auxiliares
-function barajar(array) {
-  return array.sort(() => Math.random() - 0.5);
+// =======================
+// UTILS
+function barajar(array){
+  return array.sort(()=>Math.random()-0.5);
 }
 
-// Crear nueva partida
-function crearPartida() {
+// =======================
+// CREAR PARTIDA
+function crearPartida(){
+
   const id = Math.floor(Math.random()*9000)+1000;
   partidaId = id;
 
   const baraja = barajar([...cartasBase]);
 
-  let reparto = {};
-  for (let i=0;i<numJugadores;i++){
-    reparto["jugador"+i] = baraja.slice(i*36/numJugadores,(i+1)*36/numJugadores);
+  let jugadores = {};
+
+  for(let i=0;i<numJugadores;i++){
+    jugadores["jugador"+i] = {
+      cartas: baraja.slice(i*cartasBase.length/numJugadores,(i+1)*cartasBase.length/numJugadores)
+    };
   }
 
+  jugadorId = "jugador0";
   turnoActual = "jugador0";
 
   db.ref("partidas/"+id).set({
-    jugadores: reparto,
+    jugadores,
     turno: turnoActual
   });
 
-  alert("Partida creada con código: " + id);
+  alert("Código: " + id);
   escucharPartida();
 }
 
-// Unirse a partida existente
-function unirsePartida(id) {
-  partidaId = id;
-  const partidaRef = db.ref("partidas/" + id);
+// =======================
+// UNIRSE
+function unirsePartida(){
 
-  partidaRef.once("value").then(snapshot => {
-    const data = snapshot.val();
+  const id = document.getElementById("codigo").value;
+  partidaId = id;
+
+  db.ref("partidas/"+id).once("value").then(snap=>{
+    const data = snap.val();
+
     if(!data){
-      alert("La partida no existe.");
+      alert("No existe");
       return;
     }
 
-    if(!data.jugadores[jugadorId]){
-      let jugadoresExistentes = Object.keys(data.jugadores);
-      let nuevasCartas = barajar([...cartasBase]).slice(jugadoresExistentes.length*36/numJugadores,(jugadoresExistentes.length+1)*36/numJugadores);
-      data.jugadores[jugadorId] = nuevasCartas;
-      partidaRef.child("jugadores").set(data.jugadores);
+    for(let i=0;i<numJugadores;i++){
+      let key = "jugador"+i;
+      if(!data.jugadores[key]){
+        jugadorId = key;
+        break;
+      }
     }
 
-    turnoActual = data.turno;
+    if(!jugadorId){
+      alert("Partida llena");
+      return;
+    }
+
     escucharPartida();
   });
 }
 
-// Escuchar cambios
-function escucharPartida() {
-  db.ref("partidas/"+partidaId).on("value", snapshot => {
-    const data = snapshot.val();
+// =======================
+// ESCUCHAR
+function escucharPartida(){
+
+  db.ref("partidas/"+partidaId).on("value", snap=>{
+    const data = snap.val();
     if(!data) return;
 
     turnoActual = data.turno;
-    cartasJugador = data.jugadores[jugadorId];
-    cartasOponentes = Object.entries(data.jugadores).filter(([k,v])=>k!==jugadorId).map(([k,v])=>v);
+
+    if(!data.jugadores[jugadorId]) return;
+
+    cartasJugador = data.jugadores[jugadorId].cartas;
 
     mostrarCarta();
   });
 }
 
-// Mostrar carta superior
-function mostrarCarta() {
-  const carta = cartasJugador[0];
-  const contenedor = document.getElementById("cartaJugador");
-  if(!carta){
-    contenedor.innerHTML = "<h3>Has perdido todas las cartas</h3>";
+// =======================
+// MOSTRAR CARTA
+function mostrarCarta(){
+
+  const div = document.getElementById("cartaJugador");
+
+  if(!cartasJugador || cartasJugador.length===0){
+    div.innerHTML = "<h3>Sin cartas</h3>";
     return;
   }
 
-  contenedor.innerHTML = `
-    <h3>${carta.marca} ${carta.modelo}</h3>
-    <img src="${carta.imagenUrl}" width="300"><br>
-    <button onclick="jugar('cilindrada')">Cilindrada: ${carta.cilindrada}</button>
-    <button onclick="jugar('longitud')">Longitud: ${carta.longitud}</button>
-    <button onclick="jugar('anchura')">Anchura: ${carta.anchura}</button>
-    <button onclick="jugar('altura')">Altura: ${carta.altura}</button>
-    <button onclick="jugar('cilindros')">Cilindros: ${carta.cilindros}</button>
-    <button onclick="jugar('CV')">CV: ${carta.CV}</button>
-    <button onclick="jugar('maxKMH')">Velocidad máxima: ${carta.maxKMH}</button>
-    <button onclick="jugar('peso')">Peso: ${carta.peso}</button>
-    <button onclick="jugar('aceleracion')">0-100 km/h: ${carta.aceleracion}</button>
-    <button onclick="jugar('consumo')">Consumo: ${carta.consumo}</button>
-    <button onclick="jugar('precio')">Precio: €${carta.precio}</button>
-    <p>${turnoActual===jugadorId ? "Es tu turno" : "No es tu turno"}</p>
+  const c = cartasJugador[0];
+
+  div.innerHTML = `
+    <h2>${c.marca} ${c.modelo}</h2>
+    <img src="${c.imagenUrl}" width="250"><br>
+
+    <button onclick="jugar('CV')">CV: ${c.CV}</button>
+    <button onclick="jugar('maxKMH')">Velocidad: ${c.maxKMH}</button>
+    <button onclick="jugar('peso')">Peso: ${c.peso}</button>
+
+    <p>${turnoActual===jugadorId ? "TU TURNO" : "ESPERA..."}</p>
   `;
 }
 
-// Jugar una ronda
-function jugar(atributo) {
+// =======================
+// JUGAR
+function jugar(atributo){
+
   if(turnoActual !== jugadorId){
-    alert("No es tu turno!");
+    alert("No es tu turno");
     return;
   }
 
-  const cartaJugadorActual = cartasJugador[0];
-  let ganador = jugadorId;
-  let maxValor = cartaJugadorActual[atributo];
+  db.ref("partidas/"+partidaId).once("value").then(snap=>{
 
-  cartasOponentes.forEach(oponenteCartas=>{
-    const cartaOponente = oponenteCartas[0];
-    if(cartaOponente[atributo] > maxValor){
-      maxValor = cartaOponente[atributo];
-      ganador = Object.keys(db.ref("partidas/"+partidaId+"/jugadores").once("value"))[0]; // simplificado
-    }
-  });
+    const data = snap.val();
 
-  db.ref("partidas/"+partidaId).once("value").then(snapshot=>{
-    const data = snapshot.val();
-    if(!data) return;
+    let ganador = null;
+    let mejor = -Infinity;
 
     Object.keys(data.jugadores).forEach(j=>{
-      if(j===ganador){
-        data.jugadores[j] = data.jugadores[j].concat(data.jugadores[j].shift());
-      } else {
-        data.jugadores[ganador] = data.jugadores[ganador].concat(data.jugadores[j].shift());
+      const carta = data.jugadores[j].cartas[0];
+      if(carta[atributo] > mejor){
+        mejor = carta[atributo];
+        ganador = j;
       }
     });
 
+    // mover cartas
+    Object.keys(data.jugadores).forEach(j=>{
+      const carta = data.jugadores[j].cartas.shift();
+      data.jugadores[ganador].cartas.push(carta);
+    });
+
     data.turno = ganador;
+
     db.ref("partidas/"+partidaId).set(data);
   });
 }
