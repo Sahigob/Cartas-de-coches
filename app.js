@@ -24,9 +24,9 @@ let cartasJugador = [];
 let numJugadores = 2;
 
 // =======================
-// TUS 36 CARTAS (NO TOCAR)
+// TUS CARTAS (NO TOCAR)
 const cartasBase = [
-    {id:1, marca:"Ferrari", modelo:"SF90", cilindrada:3990, longitud:4710, anchura:1972, altura:1180, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:12.0, precio:450000, imagenUrl:"https://i.imgur.com/ferrari-sf90.jpg"},
+  {id:1, marca:"Ferrari", modelo:"SF90", cilindrada:3990, longitud:4710, anchura:1972, altura:1180, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:12.0, precio:450000, imagenUrl:"https://i.imgur.com/ferrari-sf90.jpg"},
   {id:2, marca:"Lamborghini", modelo:"Aventador SVJ", cilindrada:6498, longitud:4980, anchura:2030, altura:1136, cilindros:12, CV:770, maxKMH:350, peso:1575, aceleracion:2.8, consumo:15.0, precio:517000, imagenUrl:"https://i.imgur.com/lamborghini-aventador.jpg"},
   {id:3, marca:"Porsche", modelo:"911 GT3", cilindrada:3996, longitud:4579, anchura:1852, altura:1250, cilindros:6, CV:502, maxKMH:318, peso:1430, aceleracion:3.4, consumo:13.0, precio:180000, imagenUrl:"https://i.imgur.com/porsche-911gt3.jpg"},
   {id:4, marca:"McLaren", modelo:"720S", cilindrada:3994, longitud:4543, anchura:1946, altura:1199, cilindros:8, CV:720, maxKMH:341, peso:1419, aceleracion:2.9, consumo:11.8, precio:310000, imagenUrl:"https://i.imgur.com/mclaren-720s.jpg"},
@@ -77,22 +77,14 @@ function crearPartida(){
   const id = Math.floor(Math.random()*9000)+1000;
   partidaId = id;
 
-  const baraja = barajar([...cartasBase]);
-
-  let jugadores = {};
-
-  for(let i=0;i<numJugadores;i++){
-    jugadores["jugador"+i] = {
-      cartas: baraja.slice(i*cartasBase.length/numJugadores,(i+1)*cartasBase.length/numJugadores)
-    };
-  }
-
   jugadorId = "jugador0";
-  turnoActual = "jugador0";
 
   db.ref("partidas/"+id).set({
-    jugadores,
-    turno: turnoActual
+    jugadores: {
+      jugador0: { cartas: [] }
+    },
+    turno: null,
+    repartido: false
   });
 
   alert("Código: " + id);
@@ -106,7 +98,9 @@ function unirsePartida(){
   const id = document.getElementById("codigo").value;
   partidaId = id;
 
-  db.ref("partidas/"+id).once("value").then(snap=>{
+  const ref = db.ref("partidas/"+id);
+
+  ref.once("value").then(snap=>{
     const data = snap.val();
 
     if(!data){
@@ -114,19 +108,25 @@ function unirsePartida(){
       return;
     }
 
+    let encontrado = false;
+
     for(let i=0;i<numJugadores;i++){
       let key = "jugador"+i;
+
       if(!data.jugadores[key]){
         jugadorId = key;
+        data.jugadores[key] = { cartas: [] };
+        encontrado = true;
         break;
       }
     }
 
-    if(!jugadorId){
+    if(!encontrado){
       alert("Partida llena");
       return;
     }
 
+    ref.set(data);
     escucharPartida();
   });
 }
@@ -138,6 +138,27 @@ function escucharPartida(){
   db.ref("partidas/"+partidaId).on("value", snap=>{
     const data = snap.val();
     if(!data) return;
+
+    const total = Object.keys(data.jugadores).length;
+
+    // 🔥 REPARTO AUTOMÁTICO
+    if(total === numJugadores && !data.repartido){
+
+      const baraja = barajar([...cartasBase]);
+      let i = 0;
+
+      Object.keys(data.jugadores).forEach(j=>{
+        data.jugadores[j].cartas =
+          baraja.slice(i*cartasBase.length/numJugadores,(i+1)*cartasBase.length/numJugadores);
+        i++;
+      });
+
+      data.turno = "jugador0";
+      data.repartido = true;
+
+      db.ref("partidas/"+partidaId).set(data);
+      return;
+    }
 
     turnoActual = data.turno;
 
@@ -198,7 +219,6 @@ function jugar(atributo){
       }
     });
 
-    // mover cartas
     Object.keys(data.jugadores).forEach(j=>{
       const carta = data.jugadores[j].cartas.shift();
       data.jugadores[ganador].cartas.push(carta);
