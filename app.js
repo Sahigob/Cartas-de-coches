@@ -25,9 +25,9 @@ let cartasJugador = [];
 const numJugadores = 2;
 
 // =======================
-// CARTAS (usa las tuyas completas)
+// CARTAS (usa tus 36 cartas completas)
 const cartasBase = [
-  {id:1, marca:"Ferrari", modelo:"SF90", cilindrada:3990, longitud:4710, anchura:1972, altura:1180, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:12.0, precio:450000, imagenUrl:"https://i.imgur.com/ferrari-sf90.jpg"},
+    {id:1, marca:"Ferrari", modelo:"SF90", cilindrada:3990, longitud:4710, anchura:1972, altura:1180, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:12.0, precio:450000, imagenUrl:"https://i.imgur.com/ferrari-sf90.jpg"},
   {id:2, marca:"Lamborghini", modelo:"Aventador SVJ", cilindrada:6498, longitud:4980, anchura:2030, altura:1136, cilindros:12, CV:770, maxKMH:350, peso:1575, aceleracion:2.8, consumo:15.0, precio:517000, imagenUrl:"https://i.imgur.com/lamborghini-aventador.jpg"},
   {id:3, marca:"Porsche", modelo:"911 GT3", cilindrada:3996, longitud:4579, anchura:1852, altura:1250, cilindros:6, CV:502, maxKMH:318, peso:1430, aceleracion:3.4, consumo:13.0, precio:180000, imagenUrl:"https://i.imgur.com/porsche-911gt3.jpg"},
   {id:4, marca:"McLaren", modelo:"720S", cilindrada:3994, longitud:4543, anchura:1946, altura:1199, cilindros:8, CV:720, maxKMH:341, peso:1419, aceleracion:2.9, consumo:11.8, precio:310000, imagenUrl:"https://i.imgur.com/mclaren-720s.jpg"},
@@ -66,7 +66,7 @@ const cartasBase = [
 ];
 
 // =======================
-// UTILS
+// UTILIDADES
 function barajar(array){
   return array.sort(()=>Math.random()-0.5);
 }
@@ -74,14 +74,12 @@ function barajar(array){
 // =======================
 // CREAR PARTIDA
 function crearPartida(){
-
   const id = Math.floor(Math.random()*9000)+1000;
   partidaId = id;
 
   jugadorId = "jugador0";
 
   const baraja = barajar([...cartasBase]);
-
   const mitad = Math.floor(baraja.length/2);
 
   db.ref("partidas/"+id).set({
@@ -98,23 +96,46 @@ function crearPartida(){
 }
 
 // =======================
-// UNIRSE
+// UNIRSE A PARTIDA
 function unirsePartida(){
-
   const id = document.getElementById("codigo").value;
   partidaId = id;
 
-  jugadorId = "jugador1"; // 👈 SIEMPRE el segundo
+  const partidaRef = db.ref("partidas/"+id);
 
-  escucharPartida();
+  partidaRef.once("value").then(snap=>{
+    const data = snap.val();
+    if(!data){
+      alert("La partida no existe");
+      return;
+    }
+
+    // Determinar jugadorId libre
+    const jugadoresExistentes = Object.keys(data.jugadores);
+    if(jugadoresExistentes.includes("jugador0") && jugadoresExistentes.includes("jugador1")){
+      alert("La partida ya tiene 2 jugadores");
+      return;
+    }
+
+    jugadorId = jugadoresExistentes.includes("jugador0") ? "jugador1" : "jugador0";
+
+    // Repartir cartas al jugador nuevo
+    const baraja = barajar([...cartasBase]);
+    const mitad = Math.floor(baraja.length/2);
+    const cartasNuevas = jugadorId === "jugador0" ? baraja.slice(0, mitad) : baraja.slice(mitad);
+
+    data.jugadores[jugadorId] = { cartas: cartasNuevas };
+
+    partidaRef.set(data);
+
+    escucharPartida();
+  });
 }
 
 // =======================
-// ESCUCHAR
+// ESCUCHAR PARTIDA
 function escucharPartida(){
-
   db.ref("partidas/"+partidaId).on("value", snap=>{
-
     const data = snap.val();
     if(!data) return;
 
@@ -131,7 +152,6 @@ function escucharPartida(){
 // =======================
 // MOSTRAR CARTA
 function mostrarCarta(){
-
   const div = document.getElementById("cartaJugador");
 
   if(!cartasJugador || cartasJugador.length===0){
@@ -154,17 +174,16 @@ function mostrarCarta(){
 }
 
 // =======================
-// JUGAR
+// JUGAR TURNO
 function jugar(atributo){
-
   if(turnoActual !== jugadorId){
     alert("No es tu turno");
     return;
   }
 
   db.ref("partidas/"+partidaId).once("value").then(snap=>{
-
     const data = snap.val();
+    if(!data) return;
 
     const c0 = data.jugadores.jugador0.cartas[0];
     const c1 = data.jugadores.jugador1.cartas[0];
