@@ -12,16 +12,20 @@ const firebaseConfig = {
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
-let jugadorId;
-let partidaId;
-let turnoActual;
-let cartasJugador = [];
-let cartasRestantes = [];
 
 // -------------------------------------
-// 36 cartas de ejemplo
+// Variables globales
+let jugadorId = "jugador" + Math.floor(Math.random()*1000); // ID único jugador
+let partidaId = null;
+let turnoActual = null;
+let cartasJugador = [];
+let cartasOponentes = [];
+let numJugadores = 2; // Cambiar a 3 si quieres jugar a 3 jugadores
+
+// -------------------------------------
+// 36 cartas deportivas de ejemplo
 const cartasBase = [
-  {id:1, marca:"Ferrari", modelo:"SF90", cilindrada:3990, longitud:4710, anchura:1972, altura:1180, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:12.0, precio:450000, imagenUrl:"https://i.imgur.com/ferrari-sf90.jpg"},
+   {id:1, marca:"Ferrari", modelo:"SF90", cilindrada:3990, longitud:4710, anchura:1972, altura:1180, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:12.0, precio:450000, imagenUrl:"https://i.imgur.com/ferrari-sf90.jpg"},
   {id:2, marca:"Lamborghini", modelo:"Aventador SVJ", cilindrada:6498, longitud:4980, anchura:2030, altura:1136, cilindros:12, CV:770, maxKMH:350, peso:1575, aceleracion:2.8, consumo:15.0, precio:517000, imagenUrl:"https://i.imgur.com/lamborghini-aventador.jpg"},
   {id:3, marca:"Porsche", modelo:"911 GT3", cilindrada:3996, longitud:4579, anchura:1852, altura:1250, cilindros:6, CV:502, maxKMH:318, peso:1430, aceleracion:3.4, consumo:13.0, precio:180000, imagenUrl:"https://i.imgur.com/porsche-911gt3.jpg"},
   {id:4, marca:"McLaren", modelo:"720S", cilindrada:3994, longitud:4543, anchura:1946, altura:1199, cilindros:8, CV:720, maxKMH:341, peso:1419, aceleracion:2.9, consumo:11.8, precio:310000, imagenUrl:"https://i.imgur.com/mclaren-720s.jpg"},
@@ -60,35 +64,6 @@ const cartasBase = [
 ];
 
 // -------------------------------------
-// Aquí implementaremos la lógica de reparto, turno y comparación
-// (Esto lo desarrollamos en el siguiente paso)
-// Configuración Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyDvoniQYLcoBcL0F_n_KoGo4ZYLAKwSooA",
-  authDomain: "carta-de-coches.firebaseapp.com",
-  databaseURL: "https://carta-de-coches-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "carta-de-coches",
-  storageBucket: "carta-de-coches.appspot.com",
-  messagingSenderId: "785928361183",
-  appId: "1:785928361183:web:4af4c916880d4af760056a"
-};
-
-// Inicializar Firebase
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-let jugadorId = "jugador" + Math.floor(Math.random()*1000); // ID único jugador
-let partidaId = null;
-let turnoActual = null;
-let cartasJugador = [];
-let cartasOponentes = [];
-let numJugadores = 2; // Puedes cambiar a 3 antes de crear la partida
-
-// -------------------------------------
-// 36 cartas deportivas de ejemplo
-const cartasBase = [ /* aquí va el array de 36 cartas que ya generamos antes */ ];
-
-// -------------------------------------
 // Funciones auxiliares
 function barajar(array) {
   return array.sort(() => Math.random() - 0.5);
@@ -96,18 +71,16 @@ function barajar(array) {
 
 // Crear nueva partida
 function crearPartida() {
-  const id = Math.floor(Math.random()*9000)+1000; // Código partida 1000-9999
+  const id = Math.floor(Math.random()*9000)+1000;
   partidaId = id;
 
   const baraja = barajar([...cartasBase]);
 
-  // Repartir cartas según jugadores
   let reparto = {};
   for (let i=0;i<numJugadores;i++){
     reparto["jugador"+i] = baraja.slice(i*36/numJugadores,(i+1)*36/numJugadores);
   }
 
-  // Asignar primer turno
   turnoActual = "jugador0";
 
   db.ref("partidas/"+id).set({
@@ -131,9 +104,7 @@ function unirsePartida(id) {
       return;
     }
 
-    // Si jugador no estaba agregado, añadirlo
     if(!data.jugadores[jugadorId]){
-      // Tomamos cartas del reparto según número de jugadores actual
       let jugadoresExistentes = Object.keys(data.jugadores);
       let nuevasCartas = barajar([...cartasBase]).slice(jugadoresExistentes.length*36/numJugadores,(jugadoresExistentes.length+1)*36/numJugadores);
       data.jugadores[jugadorId] = nuevasCartas;
@@ -145,7 +116,7 @@ function unirsePartida(id) {
   });
 }
 
-// Escuchar cambios de la partida en tiempo real
+// Escuchar cambios
 function escucharPartida() {
   db.ref("partidas/"+partidaId).on("value", snapshot => {
     const data = snapshot.val();
@@ -159,7 +130,7 @@ function escucharPartida() {
   });
 }
 
-// Mostrar carta superior del jugador
+// Mostrar carta superior
 function mostrarCarta() {
   const carta = cartasJugador[0];
   const contenedor = document.getElementById("cartaJugador");
@@ -193,26 +164,22 @@ function jugar(atributo) {
     return;
   }
 
-  const cartaJugador = cartasJugador[0];
+  const cartaJugadorActual = cartasJugador[0];
   let ganador = jugadorId;
-  let maxValor = cartaJugador[atributo];
+  let maxValor = cartaJugadorActual[atributo];
 
-  // Comparar con oponentes
-  cartasOponentes.forEach((oponenteCartas)=>{
+  cartasOponentes.forEach(oponenteCartas=>{
     const cartaOponente = oponenteCartas[0];
-    let valor = cartaOponente[atributo];
-    if(valor > maxValor){
-      maxValor = valor;
+    if(cartaOponente[atributo] > maxValor){
+      maxValor = cartaOponente[atributo];
       ganador = Object.keys(db.ref("partidas/"+partidaId+"/jugadores").once("value"))[0]; // simplificado
     }
   });
 
-  // Actualizar cartas y turno
   db.ref("partidas/"+partidaId).once("value").then(snapshot=>{
     const data = snapshot.val();
     if(!data) return;
 
-    // Repartir cartas al ganador
     Object.keys(data.jugadores).forEach(j=>{
       if(j===ganador){
         data.jugadores[j] = data.jugadores[j].concat(data.jugadores[j].shift());
@@ -221,10 +188,7 @@ function jugar(atributo) {
       }
     });
 
-    // Actualizar turno
     data.turno = ganador;
-
-    // Guardar cambios
     db.ref("partidas/"+partidaId).set(data);
   });
 }
