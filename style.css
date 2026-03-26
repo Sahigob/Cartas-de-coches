@@ -1,35 +1,58 @@
 body {
-  font-family: sans-serif;
+  font-family: Arial, sans-serif;
   text-align: center;
-  margin: 20px;
+  background-color: #f2f2f2;
+  color: #333;
+  margin: 0;
+  padding: 0;
 }
 
-.carta {
-  border: 1px solid #333;
-  display: inline-block;
-  padding: 10px;
-  margin: 10px;
-  width: 200px;
-  background-color: #f9f9f9;
-  border-radius: 8px;
+h1 {
+  background-color: #ff4d4d;
+  color: white;
+  padding: 20px 0;
+  margin: 0 0 20px 0;
 }
 
-.carta img {
-  width: 100%;
-  height: auto;
-  border-radius: 4px;
+#menu {
+  margin-bottom: 20px;
 }
 
-button {
+#menu button, #menu input {
+  padding: 10px 15px;
   margin: 5px;
-  padding: 5px 10px;
-  cursor: pointer;
-  border-radius: 4px;
-  border: 1px solid #333;
-  background-color: #eee;
-  transition: 0.2s;
+  font-size: 16px;
 }
 
-button:hover {
-  background-color: #ddd;
+#cartaJugador {
+  background-color: white;
+  display: inline-block;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+}
+
+#cartaJugador img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+#cartaJugador button {
+  display: block;
+  width: 200px;
+  margin: 5px auto;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  background-color: #ff6666;
+  color: white;
+  transition: background-color 0.3s;
+}
+
+#cartaJugador button:hover {
+  background-color: #ff1a1a;
 }
