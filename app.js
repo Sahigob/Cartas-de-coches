@@ -1,0 +1,115 @@
+// 🔹 Configura Firebase
+const firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_PROYECTO.firebaseapp.com",
+  databaseURL: "TU_DATABASE_URL",
+  projectId: "TU_PROYECTO",
+  storageBucket: "TU_PROYECTO.appspot.com",
+  messagingSenderId: "TU_SENDER_ID",
+  appId: "TU_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.database();
+
+let jugadorId;
+let partidaId = prompt("Ingresa código de partida o deja en blanco para crear:");
+let turnoActual = "";
+let cartas = [];
+
+auth.signInAnonymously().then(user => {
+  jugadorId = user.user.uid;
+  if (!partidaId) crearPartida();
+  else unirsePartida(partidaId);
+});
+
+function crearPartida() {
+  partidaId = Math.random().toString(36).substr(2,5).toUpperCase();
+  cartas = [
+    {id:1, marca:"Ferrari", modelo:"LaFerrari", velocidad:350, caballos:963, peso:1585, imagenUrl:"URL_DE_TU_IMAGEN_1"},
+    {id:2, marca:"Lamborghini", modelo:"Aventador", velocidad:355, caballos:730, peso:1575, imagenUrl:"URL_DE_TU_IMAGEN_2"},
+    {id:3, marca:"Porsche", modelo:"911 GT3", velocidad:318, caballos:502, peso:1430, imagenUrl:"URL_DE_TU_IMAGEN_3"}
+  ];
+  db.ref("partidas/" + partidaId).set({
+    jugadores: {[jugadorId]: {cartas: cartas, nombre:"Jugador1"}},
+    turno: jugadorId,
+    elecciones: {}
+  });
+  escucharPartida();
+  alert("Partida creada: " + partidaId + "\nComparte este código con otros jugadores.");
+}
+
+function unirsePartida(id) {
+  db.ref("partidas/" + id + "/jugadores/" + jugadorId).set({cartas: [], nombre:"Jugador" + Math.floor(Math.random()*100)});
+  partidaId = id;
+  escucharPartida();
+}
+
+function escucharPartida() {
+  db.ref("partidas/" + partidaId).on("value", snapshot => {
+    const data = snapshot.val();
+    if (!data) return;
+    turnoActual = data.turno;
+    cartas = data.jugadores[jugadorId]?.cartas || [];
+    mostrarCartas(cartas);
+    document.getElementById("info").innerText = "Turno actual: " + turnoActual;
+
+    const elecciones = data.elecciones || {};
+    if(Object.keys(elecciones).length >= 3){
+      compararAtributos(elecciones, data.jugadores);
+    }
+  });
+}
+
+function mostrarCartas(lista) {
+  const cont = document.getElementById("cartas");
+  cont.innerHTML = "";
+  lista.forEach(c => {
+    const div = document.createElement("div");
+    div.className = "carta";
+    div.innerHTML = `
+      <img src="${c.imagenUrl}" alt="${c.marca} ${c.modelo}">
+      <strong>${c.marca} ${c.modelo}</strong><br>
+      Vel: ${c.velocidad} km/h<br>
+      Cab: ${c.caballos} CV<br>
+      Peso: ${c.peso} kg<br>
+      <button onclick="elegirAtributo(${c.id}, 'velocidad')">Velocidad</button>
+      <button onclick="elegirAtributo(${c.id}, 'caballos')">Caballos</button>
+      <button onclick="elegirAtributo(${c.id}, 'peso')">Peso</button>
+    `;
+    cont.appendChild(div);
+  });
+}
+
+function elegirAtributo(cartaId, atributo) {
+  if (turnoActual !== jugadorId) { alert("No es tu turno"); return; }
+  db.ref("partidas/" + partidaId + "/elecciones/" + jugadorId).set({cartaId, atributo});
+}
+
+function compararAtributos(elecciones, jugadores) {
+  const [first] = Object.values(elecciones);
+  const atributo = first.atributo;
+
+  let resultados = [];
+  for(const [jid, ele] of Object.entries(elecciones)){
+    const carta = jugadores[jid].cartas.find(c=>c.id==ele.cartaId);
+    resultados.push({jid, valor: carta[atributo], carta: carta});
+  }
+
+  resultados.sort((a,b)=>b.valor - a.valor);
+  const ganador = resultados[0].jid;
+
+  for(const r of resultados){
+    if(r.jid !== ganador){
+      jugadores[ganador].cartas.push(r.carta);
+      jugadores[r.jid].cartas = jugadores[r.jid].cartas.filter(c=>c.id!==r.carta.id);
+    }
+  }
+
+  db.ref("partidas/" + partidaId + "/jugadores").set(jugadores);
+  db.ref("partidas/" + partidaId + "/turno").set(ganador);
+  db.ref("partidas/" + partidaId + "/elecciones").remove();
+
+  document.getElementById("ultimogano").innerText = "Última ronda: Ganador = " + ganador;
+}
