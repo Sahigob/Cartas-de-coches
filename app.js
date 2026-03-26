@@ -1,7 +1,6 @@
 // ==========================================
 // 1. CONFIGURACIÓN DE FIREBASE
 // ==========================================
-// (Asegúrate de que estos datos coinciden con tu consola de Firebase)
 const firebaseConfig = {
     apiKey: "AIzaSyDvoniQYLcoBcL0F_n_KoGo4ZYLAKwSooA",
     authDomain: "carta-de-coches.firebaseapp.com",
@@ -65,7 +64,7 @@ let partidaId = null;
 let esCreador = false;
 
 // ==========================================
-// 4. FUNCIONES DE CONEXIÓN Y REPARTO
+// 4. FUNCIONES DE CONEXIÓN
 // ==========================================
 
 function crearPartida() {
@@ -79,7 +78,8 @@ function crearPartida() {
         jugadores: {
             jugador0: { activo: true, cartas: [] }
         },
-        turno: "jugador0"
+        turno: "jugador0",
+        ultimoResultado: null
     }).then(() => {
         document.getElementById("areaCreador").style.display = "block";
         document.getElementById("controles-iniciales").style.display = "none";
@@ -98,7 +98,7 @@ function unirsePartida() {
         if (!data) return alert("La partida no existe");
         
         const numActual = Object.keys(data.jugadores).length;
-        if (numActual >= 3) return alert("Partida llena (Máx 3)");
+        if (numActual >= 3) return alert("Partida llena");
 
         jugadorId = "jugador" + numActual;
         db.ref(`partidas/${id}/jugadores/${jugadorId}`).set({ 
@@ -117,7 +117,7 @@ function iniciarJuego() {
         const listaJugadores = Object.keys(data.jugadores);
         const n = listaJugadores.length;
 
-        if (n < 2) return alert("Se necesitan al menos 2 jugadores");
+        if (n < 2) return alert("Mínimo 2 jugadores");
 
         const mazoBarajado = [...cartasBase].sort(() => Math.random() - 0.5);
         const cartasPorPersona = Math.floor(36 / n);
@@ -134,7 +134,7 @@ function iniciarJuego() {
 }
 
 // ==========================================
-// 5. ESCUCHA DE CAMBIOS Y RENDERIZADO
+// 5. ESCUCHA Y RENDERIZADO
 // ==========================================
 
 function escucharPartida() {
@@ -146,43 +146,57 @@ function escucharPartida() {
         const areaCarta = document.getElementById("cartaJugador");
 
         if (data.config.estado === "esperando") {
-            info.innerHTML = `SALA DE ESPERA | Código: <b>${partidaId}</b><br>Jugadores conectados: ${Object.keys(data.jugadores).length}`;
+            info.innerHTML = `SALA DE ESPERA | Código: <b>${partidaId}</b><br>Jugadores: ${Object.keys(data.jugadores).length}`;
             return;
+        }
+
+        // Mostrar aviso de victoria/derrota de la ronda
+        let mensajeRonda = "";
+        if (data.ultimoResultado) {
+            const res = data.ultimoResultado;
+            if (res.ganador === jugadorId) {
+                mensajeRonda = `<div style="color: #2a9d8f; font-weight: bold; margin-bottom: 10px; animation: pulse 1s infinite;">✅ ¡GANASTE LA RONDA! (${res.valor} en ${res.atributo})</div>`;
+            } else {
+                mensajeRonda = `<div style="color: #e63946; font-weight: bold; margin-bottom: 10px;">❌ PERDISTE LA RONDA (${res.ganador} ganó con ${res.valor})</div>`;
+            }
         }
 
         const misCartas = data.jugadores[jugadorId].cartas || [];
         if (misCartas.length === 0) {
-            areaCarta.innerHTML = "<div class='card'><h2>Has perdido todas tus cartas</h2></div>";
-            info.innerHTML = "FIN DE LA PARTIDA PARA TI";
+            areaCarta.innerHTML = "<div class='card'><h2>💀 FIN DEL JUEGO</h2><p>Te has quedado sin cartas.</p></div>";
             return;
         }
 
-        const cartaActual = misCartas[0];
+        const carta = misCartas[0];
         const esMiTurno = data.turno === jugadorId;
         
-        info.innerHTML = `Turno de: <b>${data.turno}</b> | Tus cartas: ${misCartas.length}`;
+        info.innerHTML = `Tus cartas: ${misCartas.length} | Turno: <b>${data.turno}</b>`;
 
         areaCarta.innerHTML = `
+            ${mensajeRonda}
             <div class="card">
-                <h2>${cartaActual.marca} ${cartaActual.modelo}</h2>
-                <img src="${cartaActual.imagenUrl}">
+                <h2>${carta.marca} ${carta.modelo}</h2>
+                <img src="${carta.imagenUrl}">
                 <div class="grid-stats">
-                    <button class="stat-btn" onclick="lanzarAtaque('CV')">Potencia: <b>${cartaActual.CV} CV</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('maxKMH')">Velocidad: <b>${cartaActual.maxKMH} km/h</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('cilindrada')">Cilindrada: <b>${cartaActual.cilindrada} cc</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('peso')">Peso: <b>${cartaActual.peso} kg</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('aceleracion')">0-100: <b>${cartaActual.aceleracion} s</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('consumo')">Consumo: <b>${cartaActual.consumo} L</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('cilindros')">Cilindros: <b>${cartaActual.cilindros}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('cilindrada')">Cilindrada: <b>${carta.cilindrada} cc</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('longitud')">Longitud: <b>${carta.longitud} mm</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('cilindros')">Cilindros: <b>${carta.cilindros}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('anchura')">Anchura: <b>${carta.anchura} mm</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('CV')">Potencia: <b>${carta.CV} CV</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('altura')">Altura: <b>${carta.altura} mm</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('maxKMH')">Velocidad: <b>${carta.maxKMH} km/h</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('peso')">Peso: <b>${carta.peso} kg</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('aceleracion')">0-100: <b>${carta.aceleracion} s</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('consumo')">Consumo: <b>${carta.consumo} L</b></button>
                 </div>
-                ${!esMiTurno ? `<div class="bloqueo">Espera el turno de ${data.turno}...</div>` : ""}
+                ${!esMiTurno ? `<div class="bloqueo">Espera a ${data.turno}...</div>` : ""}
             </div>
         `;
     });
 }
 
 // ==========================================
-// 6. LÓGICA DE JUEGO (EL COMBATE)
+// 6. LÓGICA DE ATAQUE
 // ==========================================
 
 function lanzarAtaque(atributo) {
@@ -193,14 +207,11 @@ function lanzarAtaque(atributo) {
         let ganadorId = "";
         let valorMaximo = -Infinity;
 
-        // Regla especial: En Aceleración y Consumo suele ganar el menor,
-        // pero por tu petición de "siempre gana el mayor", mantenemos mayor.
-        // Si quieres cambiarlo para 'aceleracion', dímelo.
-
+        // Comparamos a todos los jugadores que tengan cartas
         Object.keys(data.jugadores).forEach(id => {
-            const cartasJug = data.jugadores[id].cartas;
-            if (cartasJug && cartasJug.length > 0) {
-                const valor = cartasJug[0][atributo];
+            const mazo = data.jugadores[id].cartas;
+            if (mazo && mazo.length > 0) {
+                const valor = mazo[0][atributo];
                 if (valor > valorMaximo) {
                     valorMaximo = valor;
                     ganadorId = id;
@@ -208,21 +219,25 @@ function lanzarAtaque(atributo) {
             }
         });
 
-        // Proceso de mover cartas
-        const pozoRonda = [];
+        // Registrar resultado para los mensajes
+        data.ultimoResultado = {
+            ganador: ganadorId,
+            atributo: atributo.toUpperCase(),
+            valor: valorMaximo
+        };
+
+        // Recoger cartas de la mesa
+        const pozo = [];
         Object.keys(data.jugadores).forEach(id => {
             if (data.jugadores[id].cartas && data.jugadores[id].cartas.length > 0) {
-                pozoRonda.push(data.jugadores[id].cartas.shift());
+                pozo.push(data.jugadores[id].cartas.shift());
             }
         });
 
-        // El ganador recibe las 2 o 3 cartas al final de su mazo
-        data.jugadores[ganadorId].cartas.push(...pozoRonda);
-        
-        // El ganador mantiene el turno para elegir siguiente atributo
+        // Entregar pozo al ganador
+        data.jugadores[ganadorId].cartas.push(...pozo);
         data.turno = ganadorId;
 
-        // Actualizar base de datos
         db.ref("partidas/" + partidaId).set(data);
     });
 }
