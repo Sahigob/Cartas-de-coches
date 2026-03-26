@@ -1,4 +1,4 @@
-// Configuración de Firebase (compat SDK)
+// Configuración de Firebase (Compat SDK)
 const firebaseConfig = {
   apiKey: "AIzaSyDvoniQYLcoBcL0F_n_KoGo4ZYLAKwSooA",
   authDomain: "carta-de-coches.firebaseapp.com",
@@ -31,9 +31,9 @@ auth.signInAnonymously().then(user => {
 function crearPartida() {
   partidaId = Math.random().toString(36).substr(2,5).toUpperCase();
   cartas = [
-    {id:1, marca:"Ferrari", modelo:"LaFerrari", velocidad:350, caballos:963, peso:1585, imagenUrl:"URL_IMAGEN_1"},
-    {id:2, marca:"Lamborghini", modelo:"Aventador", velocidad:355, caballos:730, peso:1575, imagenUrl:"URL_IMAGEN_2"},
-    {id:3, marca:"Porsche", modelo:"911 GT3", velocidad:318, caballos:502, peso:1430, imagenUrl:"URL_IMAGEN_3"}
+    {id:1, marca:"Ferrari", modelo:"LaFerrari", velocidad:350, caballos:963, peso:1585, imagenUrl:"https://i.imgur.com/1.jpg"},
+    {id:2, marca:"Lamborghini", modelo:"Aventador", velocidad:355, caballos:730, peso:1575, imagenUrl:"https://i.imgur.com/2.jpg"},
+    {id:3, marca:"Porsche", modelo:"911 GT3", velocidad:318, caballos:502, peso:1430, imagenUrl:"https://i.imgur.com/3.jpg"}
   ];
 
   db.ref("partidas/" + partidaId).set({
@@ -83,7 +83,7 @@ function mostrarCartas(lista) {
     const div = document.createElement("div");
     div.className = "carta";
     div.innerHTML = `
-      <img src="${c.imagenUrl}" alt="${c.marca} ${c.modelo}">
+      <img src="${c.imagenUrl}" alt="${c.marca} ${c.modelo}" width="200">
       <strong>${c.marca} ${c.modelo}</strong><br>
       Vel: ${c.velocidad} km/h<br>
       Cab: ${c.caballos} CV<br>
