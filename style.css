@@ -52,6 +52,7 @@ input {
     margin: 5px; 
     font-size: 1rem;
     outline: none;
+    color: #333; /* Texto oscuro dentro de inputs */
 }
 
 button {
@@ -81,7 +82,7 @@ button:hover {
     font-weight: bold;
 }
 
-/* --- CONTENEDOR DE CARTAS (DUELO) --- */
+/* --- CONTENEDOR DE CARTAS --- */
 #cartaJugador {
     display: flex;
     flex-wrap: wrap;
@@ -140,7 +141,9 @@ button:hover {
     font-size: 0.75rem; 
     cursor: pointer;
     transition: background 0.2s;
-    color: #333;
+    
+    /* CAMBIO CLAVE AQUÍ: */
+    color: #333 !important; 
 }
 
 .stat-btn:hover {
@@ -148,7 +151,7 @@ button:hover {
 }
 
 .stat-btn b { 
-    color: var(--primary); 
+    color: var(--primary) !important; 
     font-size: 0.95rem; 
 }
 
@@ -222,7 +225,6 @@ button:hover {
     gap: 6px;
 }
 
-/* Scrollbar personalizada para el chat */
 #lista-mensajes::-webkit-scrollbar { width: 5px; }
 #lista-mensajes::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
 
@@ -244,9 +246,9 @@ button:hover {
     width: auto; 
     font-size: 0.9rem; 
     padding: 8px;
+    color: #333;
 }
 
-/* Adaptación para pantallas muy pequeñas */
 @media (max-width: 360px) {
     .card.revelada { width: 42vw; }
     h1 { font-size: 1.1rem; }
