@@ -11,11 +11,16 @@ const firebaseConfig = {
     appId: "1:785928361183:web:4af4c916880d4af760056a"
 };
 
-firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const db = firebase.database();
 
+let jugadorId = null;
+let partidaId = null;
+
 // ==========================================
-// 2. BASE DE DATOS DE COCHES (36 TOTAL)
+// 2. BASE DE DATOS COMPLETA (36 COCHES)
 // ==========================================
 const cartasBase = [
   {id:1, marca:"Ferrari", modelo:"SF90 Stradale", cilindrada:3990, longitud:4710, anchura:1972, altura:1186, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:6.1, precio:430000, imagenUrl:"https://i.imgur.com/uutouvW.jpeg"},
@@ -57,54 +62,35 @@ const cartasBase = [
 ];
 
 // ==========================================
-// 3. VARIABLES DE ESTADO
-// ==========================================
-let jugadorId = null;
-let partidaId = null;
-let esCreador = false;
-
-// ==========================================
-// 4. FUNCIONES DE CONEXIÓN
+// 3. FUNCIONES DE PARTIDA
 // ==========================================
 
 function crearPartida() {
     const id = Math.floor(1000 + Math.random() * 9000);
     partidaId = id;
     jugadorId = "jugador0";
-    esCreador = true;
-
     db.ref("partidas/" + id).set({
         config: { estado: "esperando" },
-        jugadores: {
-            jugador0: { activo: true, cartas: [] }
-        },
-        turno: "jugador0",
-        ultimoResultado: null
+        jugadores: { jugador0: { activo: true, cartas: [] } },
+        turno: "jugador0"
     }).then(() => {
         document.getElementById("areaCreador").style.display = "block";
         document.getElementById("controles-iniciales").style.display = "none";
-        alert("Código de partida: " + id);
         escucharPartida();
     });
 }
 
 function unirsePartida() {
     const id = document.getElementById("codigoInput").value;
-    if (!id) return alert("Introduce el código");
+    if (!id) return alert("Pon el código");
     partidaId = id;
-
-    db.ref("partidas/" + id).once("value").then(snap => {
+    db.ref("partidas/" + id).once("value", snap => {
         const data = snap.val();
-        if (!data) return alert("La partida no existe");
-        
-        const numActual = Object.keys(data.jugadores).length;
-        if (numActual >= 3) return alert("Partida llena");
-
-        jugadorId = "jugador" + numActual;
-        db.ref(`partidas/${id}/jugadores/${jugadorId}`).set({ 
-            activo: true, 
-            cartas: [] 
-        }).then(() => {
+        if (!data) return alert("No existe");
+        const n = Object.keys(data.jugadores).length;
+        jugadorId = "jugador" + n;
+        db.ref(`partidas/${id}/jugadores/${jugadorId}`).set({ activo: true, cartas: [] })
+        .then(() => {
             document.getElementById("controles-iniciales").style.display = "none";
             escucharPartida();
         });
@@ -112,144 +98,132 @@ function unirsePartida() {
 }
 
 function iniciarJuego() {
-    db.ref("partidas/" + partidaId).once("value").then(snap => {
+    db.ref("partidas/" + partidaId).once("value", snap => {
         const data = snap.val();
-        const listaJugadores = Object.keys(data.jugadores);
-        const n = listaJugadores.length;
-
-        if (n < 2) return alert("Mínimo 2 jugadores");
-
-        const mazoBarajado = [...cartasBase].sort(() => Math.random() - 0.5);
-        const cartasPorPersona = Math.floor(36 / n);
-        
-        const actualizaciones = { "config/estado": "jugando" };
-        
-        listaJugadores.forEach((id, index) => {
-            actualizaciones[`jugadores/${id}/cartas`] = mazoBarajado.slice(index * cartasPorPersona, (index + 1) * cartasPorPersona);
+        const lista = Object.keys(data.jugadores);
+        const mazo = [...cartasBase].sort(() => Math.random() - 0.5);
+        const repartir = Math.floor(mazo.length / lista.length);
+        let updates = { "config/estado": "jugando" };
+        lista.forEach((id, i) => {
+            updates[`jugadores/${id}/cartas`] = mazo.slice(i * repartir, (i + 1) * repartir);
         });
-
-        db.ref("partidas/" + partidaId).update(actualizaciones);
-        document.getElementById("areaCreador").style.display = "none";
+        db.ref("partidas/" + partidaId).update(updates);
     });
 }
 
 // ==========================================
-// 5. ESCUCHA Y RENDERIZADO
+// 4. LÓGICA DE DIBUJO Y REVELACIÓN
 // ==========================================
 
 function escucharPartida() {
     db.ref("partidas/" + partidaId).on("value", snap => {
         const data = snap.val();
         if (!data) return;
-
+        const area = document.getElementById("cartaJugador");
         const info = document.getElementById("infoPartida");
-        const areaCarta = document.getElementById("cartaJugador");
 
         if (data.config.estado === "esperando") {
-            info.innerHTML = `SALA DE ESPERA | Código: <b>${partidaId}</b><br>Jugadores: ${Object.keys(data.jugadores).length}`;
+            info.innerHTML = `SALA DE ESPERA | Código: ${partidaId}`;
             return;
         }
 
-        // Mostrar aviso de victoria/derrota de la ronda
-        let mensajeRonda = "";
-        if (data.ultimoResultado) {
-            const res = data.ultimoResultado;
-            if (res.ganador === jugadorId) {
-                mensajeRonda = `<div style="color: #2a9d8f; font-weight: bold; margin-bottom: 10px; animation: pulse 1s infinite;">✅ ¡GANASTE LA RONDA! (${res.valor}${res.atributo === 'ACELERACION' ? 's' : ''} en ${res.atributo})</div>`;
-            } else {
-                mensajeRonda = `<div style="color: #e63946; font-weight: bold; margin-bottom: 10px;">❌ PERDISTE LA RONDA (${res.ganador} ganó con ${res.valor})</div>`;
-            }
+        // MODO DUELO (REVELACIÓN DE CARTAS)
+        if (data.revelacion) {
+            let html = "";
+            Object.keys(data.revelacion.cartas).forEach(id => {
+                const c = data.revelacion.cartas[id];
+                const esGanador = id === data.revelacion.ganador;
+                html += `
+                    <div class="duelo-container">
+                        ${esGanador ? '<div class="estrella">⭐</div>' : ''}
+                        <div class="card revelada ${esGanador ? 'ganadora' : ''}">
+                            <h2>${id === jugadorId ? "TU CARTA" : "RIVAL"}</h2>
+                            <img src="${c.imagenUrl}">
+                            <div style="text-align:center; padding: 5px;">
+                                <small>${data.revelacion.atributo.toUpperCase()}</small><br>
+                                <b>${c[data.revelacion.atributo]}</b>
+                            </div>
+                        </div>
+                    </div>`;
+            });
+            area.innerHTML = html;
+            info.innerHTML = "¡DUELO DE CARTAS!";
+            return;
         }
 
+        // MODO JUEGO NORMAL
         const misCartas = data.jugadores[jugadorId].cartas || [];
-        if (misCartas.length === 0) {
-            areaCarta.innerHTML = "<div class='card'><h2>💀 FIN DEL JUEGO</h2><p>Te has quedado sin cartas.</p></div>";
-            return;
+        if (misCartas.length === 0) { 
+            area.innerHTML = "<div class='card'><h2>💀 ELIMINADO</h2><p>Te has quedado sin cartas.</p></div>"; 
+            return; 
         }
-
+        
         const carta = misCartas[0];
         const esMiTurno = data.turno === jugadorId;
-        
-        info.innerHTML = `Tus cartas: ${misCartas.length} | Turno: <b>${data.turno}</b>`;
+        info.innerHTML = `Tus cartas: ${misCartas.length} | Turno: ${data.turno}`;
 
-        areaCarta.innerHTML = `
-            ${mensajeRonda}
+        area.innerHTML = `
             <div class="card">
                 <h2>${carta.marca} ${carta.modelo}</h2>
                 <img src="${carta.imagenUrl}">
                 <div class="grid-stats">
-                    <button class="stat-btn" onclick="lanzarAtaque('cilindrada')">Cilindrada: <b>${carta.cilindrada} cc</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('longitud')">Longitud: <b>${carta.longitud} mm</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('cilindros')">Cilindros: <b>${carta.cilindros}</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('anchura')">Anchura: <b>${carta.anchura} mm</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('CV')">Potencia: <b>${carta.CV} CV</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('altura')">Altura: <b>${carta.altura} mm</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('maxKMH')">Velocidad: <b>${carta.maxKMH} km/h</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('peso')">Peso: <b>${carta.peso} kg</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('aceleracion')">0-100: <b>${carta.aceleracion} s</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('consumo')">Consumo: <b>${carta.consumo} L</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('cilindrada')">Cilindrada <b>${carta.cilindrada} cc</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('longitud')">Longitud <b>${carta.longitud} mm</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('cilindros')">Cilindros <b>${carta.cilindros}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('anchura')">Anchura <b>${carta.anchura} mm</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('CV')">Potencia <b>${carta.CV} CV</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('altura')">Altura <b>${carta.altura} mm</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('maxKMH')">Velocidad <b>${carta.maxKMH} km/h</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('peso')">Peso <b>${carta.peso} kg</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('aceleracion')">0-100 <b>${carta.aceleracion} s</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('consumo')">Consumo <b>${carta.consumo} L</b></button>
                 </div>
-                ${!esMiTurno ? `<div class="bloqueo">Espera a ${data.turno}...</div>` : ""}
-            </div>
-        `;
+                ${!esMiTurno ? `<div class="bloqueo">Esperando a ${data.turno}...</div>` : ""}
+            </div>`;
     });
 }
 
-// ==========================================
-// 6. LÓGICA DE ATAQUE (CON REGLA ESPECIAL PARA ACELERACIÓN)
-// ==========================================
-
-function lanzarAtaque(atributo) {
-    db.ref("partidas/" + partidaId).once("value").then(snap => {
+function lanzarAtaque(at) {
+    db.ref("partidas/" + partidaId).once("value", snap => {
         const data = snap.val();
-        if (data.turno !== jugadorId) return;
+        if (data.turno !== jugadorId || data.revelacion) return;
 
         let ganadorId = "";
-        // Si es aceleración, buscamos el valor más pequeño, por eso iniciamos en Infinity.
-        // Si es otro, buscamos el más grande, por eso iniciamos en -Infinity.
-        let mejorValor = (atributo === 'aceleracion') ? Infinity : -Infinity;
+        let mejorV = (at === 'aceleracion') ? Infinity : -Infinity;
+        let cartasDuelo = {};
 
-        // Comparamos a todos los jugadores que tengan cartas
+        // Recopilar cartas para el duelo
         Object.keys(data.jugadores).forEach(id => {
             const mazo = data.jugadores[id].cartas;
             if (mazo && mazo.length > 0) {
-                const valorActual = mazo[0][atributo];
-                
-                if (atributo === 'aceleracion') {
-                    // Gana el número más pequeño (ej: 2.5s gana a 3.0s)
-                    if (valorActual < mejorValor) {
-                        mejorValor = valorActual;
-                        ganadorId = id;
-                    }
+                const c = mazo[0];
+                cartasDuelo[id] = c;
+                if (at === 'aceleracion') {
+                    if (c[at] < mejorV) { mejorV = c[at]; ganadorId = id; }
                 } else {
-                    // Gana el número más grande (ej: 1000 CV gana a 500 CV)
-                    if (valorActual > mejorValor) {
-                        mejorValor = valorActual;
-                        ganadorId = id;
-                    }
+                    if (c[at] > mejorV) { mejorV = c[at]; ganadorId = id; }
                 }
             }
         });
 
-        // Registrar resultado para los mensajes
-        data.ultimoResultado = {
-            ganador: ganadorId,
-            atributo: atributo.toUpperCase(),
-            valor: mejorValor
-        };
-
-        // Recoger cartas de la mesa
+        // Reparto físico de cartas en la DB
         const pozo = [];
         Object.keys(data.jugadores).forEach(id => {
-            if (data.jugadores[id].cartas && data.jugadores[id].cartas.length > 0) {
+            if (data.jugadores[id].cartas) {
                 pozo.push(data.jugadores[id].cartas.shift());
             }
         });
-
-        // Entregar pozo al ganador
+        
         data.jugadores[ganadorId].cartas.push(...pozo);
         data.turno = ganadorId;
+        data.revelacion = { cartas: cartasDuelo, ganador: ganadorId, atributo: at };
 
+        // Actualizar Firebase
         db.ref("partidas/" + partidaId).set(data);
+
+        // A los 4 segundos borramos la revelación para que el juego siga
+        setTimeout(() => {
+            db.ref(`partidas/${partidaId}/revelacion`).remove();
+        }, 4000);
     });
 }
