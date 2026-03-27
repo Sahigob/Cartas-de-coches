@@ -1,120 +1,253 @@
-/* --- CONFIGURACIÓN DE PANTALLA --- */
-* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+    --primary: #e63946;    /* Rojo deportivo */
+    --secondary: #1d3557;  /* Azul oscuro profundo */
+    --light: #f1faee;      /* Blanco roto */
+    --accent: #a8dadc;     /* Azul claro/Cian */
+    --gold: #ffca28;       /* Dorado para el ganador */
+}
+
+* { 
+    box-sizing: border-box; 
+    margin: 0; 
+    padding: 0; 
+}
 
 body {
-    font-family: 'Segoe UI', sans-serif;
-    background-color: #1a1a1a;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--secondary);
+    color: var(--light);
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 10px;
-    color: #fff;
     min-height: 100vh;
+    padding: 15px;
 }
 
-/* --- MENÚS DE INICIO --- */
-#controles-iniciales, #areaCreador {
-    background: white;
+h1 { 
+    font-size: 1.5rem; 
+    margin: 15px 0; 
+    text-transform: uppercase; 
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+/* --- MENÚS Y CONTROLES --- */
+#menu {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
     padding: 20px;
-    border-radius: 12px;
+    border-radius: 15px;
+    width: 100%;
+    max-width: 400px;
     text-align: center;
-    color: #333;
-    margin-bottom: 20px;
-    width: 90%;
-    max-width: 350px;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255,255,255,0.1);
 }
 
-button.main-btn {
-    background: #2a9d8f;
-    color: white;
+input { 
+    padding: 10px; 
+    border-radius: 8px; 
+    border: none; 
+    width: 120px; 
+    margin: 5px; 
+    font-size: 1rem;
+    outline: none;
+}
+
+button {
+    padding: 10px 20px;
     border: none;
-    padding: 10px 15px;
-    border-radius: 5px;
+    border-radius: 8px;
+    background-color: var(--primary);
+    color: white;
     font-weight: bold;
     cursor: pointer;
-    margin: 5px;
-}
-
-/* --- LA CARTA COMPACTA --- */
-.card {
-    background: #fff;
-    color: #333;
-    border-radius: 15px;
-    padding: 10px;
-    width: 95vw;
-    max-width: 330px; /* Ancho ideal para móviles */
-    border: 5px solid #444;
-    position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.card h2 {
-    font-size: 1.1rem;
-    text-align: center;
-    margin-bottom: 8px;
     text-transform: uppercase;
-    color: #1a1a1a;
+    transition: transform 0.2s, background 0.3s;
 }
 
-.card img {
+button:hover {
+    background-color: #f14c5a;
+    transform: scale(1.05);
+}
+
+#infoPartida {
+    font-size: 0.9rem;
+    margin-bottom: 15px;
+    background: var(--primary);
+    padding: 8px 25px;
+    border-radius: 30px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    font-weight: bold;
+}
+
+/* --- CONTENEDOR DE CARTAS (DUELO) --- */
+#cartaJugador {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 15px;
     width: 100%;
-    height: 140px; /* Imagen baja para ahorrar espacio */
-    object-fit: cover;
-    border-radius: 8px;
-    margin-bottom: 10px;
 }
 
-/* --- EL GRID DE 2 COLUMNAS (5 FILAS) --- */
-.grid-stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* AQUÍ SE CREAN LAS 2 COLUMNAS */
-    gap: 6px; /* Espacio entre botones */
+/* --- ESTILO DE LA CARTA --- */
+.card {
+    background: white;
+    color: #333;
+    width: 90vw;
+    max-width: 340px;
+    padding: 12px;
+    border-radius: 20px;
+    border: 6px solid #fff;
+    position: relative;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+}
+
+.card h2 { 
+    font-size: 1.1rem; 
+    text-align: center; 
+    margin-bottom: 10px; 
+    color: var(--secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card img { 
+    width: 100%; 
+    height: 150px; 
+    object-fit: cover; 
+    border-radius: 12px; 
+    margin-bottom: 10px; 
+    border: 1px solid #ddd;
+}
+
+/* --- BOTONES DE ATRIBUTOS (GRID) --- */
+.grid-stats { 
+    display: grid; 
+    grid-template-columns: 1fr 1fr; 
+    gap: 8px; 
 }
 
 .stat-btn {
-    background: #f8f9fa;
-    border: 1px solid #ddd;
-    padding: 6px 2px;
-    font-size: 0.75rem;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column; /* Nombre arriba, número abajo */
+    display: flex; 
+    flex-direction: column; 
     align-items: center;
+    background: #fdfdfd; 
+    border: 1px solid #eee; 
+    padding: 6px 4px;
+    border-radius: 10px; 
+    font-size: 0.75rem; 
     cursor: pointer;
     transition: background 0.2s;
 }
 
-.stat-btn:active {
-    background: #e2e6ea;
+.stat-btn:hover {
+    background: #f0f0f0;
 }
 
-.stat-btn b {
-    color: #e63946;
-    font-size: 0.9rem;
-    margin-top: 2px;
+.stat-btn b { 
+    color: var(--primary); 
+    font-size: 0.95rem; 
 }
 
-/* --- CAPA DE BLOQUEO TURNO --- */
+/* --- ESTADOS ESPECIALES (DUELO) --- */
+.duelo-container { position: relative; }
+
+.estrella {
+    position: absolute; 
+    top: -20px; 
+    right: -10px; 
+    font-size: 50px;
+    z-index: 100; 
+    filter: drop-shadow(0 0 8px gold);
+    animation: bounce 0.6s infinite alternate;
+}
+
+@keyframes bounce { 
+    from { transform: translateY(0) scale(1); } 
+    to { transform: translateY(-10px) scale(1.2); } 
+}
+
+.card.revelada { 
+    width: 45vw; 
+    max-width: 170px; 
+    font-size: 0.7rem; 
+    border-width: 4px; 
+}
+
+.card.revelada img { height: 80px; }
+
+.card.ganadora { 
+    border-color: var(--gold) !important; 
+    box-shadow: 0 0 25px var(--gold); 
+}
+
+.empate-border { 
+    border-color: var(--accent) !important; 
+    box-shadow: 0 0 20px var(--accent);
+}
+
 .bloqueo {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0.75);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 10;
-    border-radius: 10px;
-    font-weight: bold;
-    color: #000;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.7); 
     backdrop-filter: blur(2px);
+    display: flex; justify-content: center; align-items: center; 
+    z-index: 10; border-radius: 15px; 
+    color: #000; font-weight: bold; font-size: 1.2rem;
+    text-align: center; padding: 20px;
 }
 
-/* --- TEXTOS DE ESTADO --- */
-#infoPartida {
-    margin-bottom: 10px;
+/* --- SECCIÓN DEL CHAT --- */
+#chat-container {
+    width: 100%;
+    max-width: 400px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 15px;
+    margin-top: 25px;
+    padding: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+}
+
+#lista-mensajes {
+    height: 140px;
+    overflow-y: auto;
     font-size: 0.9rem;
-    text-align: center;
-    background: rgba(255,255,255,0.1);
-    padding: 5px 15px;
-    border-radius: 20px;
+    margin-bottom: 10px;
+    padding-right: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+/* Scrollbar personalizada para el chat */
+#lista-mensajes::-webkit-scrollbar { width: 5px; }
+#lista-mensajes::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+
+.msg { 
+    background: rgba(255,255,255,0.05);
+    padding: 5px 10px;
+    border-radius: 8px;
+    line-height: 1.4; 
+}
+
+.chat-input-area { 
+    display: flex; 
+    gap: 8px; 
+}
+
+#inputChat { 
+    flex-grow: 1; 
+    margin: 0; 
+    width: auto; 
+    font-size: 0.9rem; 
+    padding: 8px;
+}
+
+/* Adaptación para pantallas muy pequeñas */
+@media (max-width: 360px) {
+    .card.revelada { width: 42vw; }
+    h1 { font-size: 1.1rem; }
+    .stat-btn { font-size: 0.65rem; }
 }
