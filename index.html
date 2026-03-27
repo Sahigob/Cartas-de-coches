@@ -3,205 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supercars Battle - 2 o 3 Jugadores</title>
+    <title>Supercars Battle - Duelo de Cartas</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-   <style>
-    :root {
-        --primary: #e63946;
-        --secondary: #1d3557;
-        --light: #f1faee;
-        --accent: #a8dadc;
-        --success: #2a9d8f;
-    }
+    <style>
+        :root {
+            --primary: #e63946;
+            --secondary: #1d3557;
+            --light: #f1faee;
+            --accent: #a8dadc;
+        }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-    body {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        background-color: var(--secondary);
-        color: var(--light);
-        margin: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
-        padding: 10px;
-        overflow-x: hidden;
-    }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: var(--secondary);
+            color: var(--light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+        }
 
-    h1 {
-        margin: 10px 0;
-        font-size: 1.2rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        text-align: center;
-    }
+        h1 { font-size: 1.2rem; margin: 10px 0; text-transform: uppercase; }
 
-    /* --- MENÚ Y CONTROLES --- */
-    #menu {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 15px;
-        border-radius: 15px;
-        backdrop-filter: blur(5px);
-        width: 100%;
-        max-width: 340px;
-        text-align: center;
-        margin-bottom: 15px;
-        border: 1px solid rgba(255,255,255,0.1);
-    }
+        /* --- MENÚS --- */
+        #menu {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
 
-    input {
-        padding: 10px;
-        border-radius: 8px;
-        border: none;
-        width: 120px;
-        font-size: 1rem;
-        margin: 10px 5px;
-        text-align: center;
-    }
+        input { padding: 8px; border-radius: 5px; border: none; width: 100px; margin: 5px; }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+        }
 
-    button {
-        padding: 10px 18px;
-        border: none;
-        border-radius: 8px;
-        background-color: var(--primary);
-        color: white;
-        font-weight: bold;
-        cursor: pointer;
-        transition: transform 0.1s;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-    }
+        #infoPartida {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            background: var(--primary);
+            padding: 5px 20px;
+            border-radius: 20px;
+        }
 
-    button:active { transform: scale(0.95); }
+        /* --- CONTENEDOR DE CARTAS (DUELO Y JUEGO) --- */
+        #cartaJugador {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+        }
 
-    /* --- ÁREA DE JUEGO --- */
-    #infoPartida {
-        font-size: 0.9rem;
-        margin-bottom: 12px;
-        background: var(--primary);
-        padding: 6px 20px;
-        border-radius: 20px;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-    }
+        .card {
+            background: white;
+            color: #333;
+            width: 92vw;
+            max-width: 320px;
+            padding: 10px;
+            border-radius: 15px;
+            border: 5px solid #fff;
+            position: relative;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
 
-    /* --- LA CARTA (DISEÑO COMPACTO 2 COLUMNAS) --- */
-    .card {
-        background: white;
-        color: #333;
-        width: 92vw;
-        max-width: 320px;
-        padding: 10px;
-        border-radius: 15px;
-        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-        border: 5px solid #fff;
-        position: relative;
-        margin-bottom: 20px;
-    }
+        .card h2 { font-size: 1rem; text-align: center; margin-bottom: 8px; color: var(--secondary); }
+        .card img { width: 100%; height: 130px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
 
-    .card h2 {
-        margin: 0 0 8px 0;
-        font-size: 1rem;
-        text-align: center;
-        color: var(--secondary);
-        border-bottom: 2px solid #f0f0f0;
-        padding-bottom: 4px;
-    }
+        /* GRID 2 COLUMNAS */
+        .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .stat-btn {
+            display: flex; flex-direction: column; align-items: center;
+            background: #f8f9fa; border: 1px solid #ddd; padding: 5px 2px;
+            border-radius: 6px; font-size: 0.7rem; cursor: pointer;
+        }
+        .stat-btn b { color: var(--primary); font-size: 0.85rem; }
 
-    .card img {
-        width: 100%;
-        height: 135px; /* Altura optimizada para móviles */
-        object-fit: cover;
-        border-radius: 8px;
-        margin-bottom: 10px;
-        display: block;
-    }
+        /* MODO REVELACIÓN (CARTA PEQUEÑA) */
+        .duelo-container { position: relative; }
+        .estrella {
+            position: absolute; top: -15px; right: -15px; font-size: 40px;
+            z-index: 100; filter: drop-shadow(0 0 5px gold);
+            animation: bounce 0.5s infinite alternate;
+        }
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.2); } }
 
-    /* EL GRID DE 2 COLUMNAS / 5 FILAS */
-    .grid-stats {
-        display: grid;
-        grid-template-columns: 1fr 1fr; /* 2 Columnas iguales */
-        gap: 6px;
-    }
+        .card.revelada { width: 155px; font-size: 0.7rem; border-width: 3px; }
+        .card.revelada h2 { font-size: 0.7rem; }
+        .card.revelada img { height: 70px; }
+        .card.ganadora { border-color: #ffca28; box-shadow: 0 0 15px gold; }
 
-    .stat-btn {
-        display: flex;
-        flex-direction: column; /* Etiqueta arriba, valor abajo */
-        align-items: center;
-        justify-content: center;
-        background: #f8f9fa;
-        border: 1px solid #dee2e6;
-        padding: 6px 2px;
-        border-radius: 8px;
-        font-size: 0.7rem;
-        color: #666;
-        width: 100%;
-        cursor: pointer;
-    }
-
-    .stat-btn b {
-        color: var(--primary);
-        font-size: 0.9rem;
-        margin-top: 2px;
-    }
-
-    /* --- CAPA DE BLOQUEO (SIN BORROSO) --- */
-    .bloqueo {
-        position: absolute;
-        top: 0; left: 0; 
-        width: 100%; height: 100%;
-        background: rgba(255, 255, 255, 0.5); /* Semi-transparente para que se vea la carta */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        z-index: 20;
-        border-radius: 10px;
-        color: #000;
-        font-weight: 800;
-        text-align: center;
-        padding: 15px;
-        pointer-events: all; /* Bloquea clics pero permite ver contenido */
-    }
-
-    /* Animación simple para cuando ganas una ronda */
-    .ganador-ronda {
-        animation: pulse 0.5s ease-in-out;
-    }
-
-    @keyframes pulse {
-        0% { transform: scale(1); }
-        50% { transform: scale(1.03); }
-        100% { transform: scale(1); }
-    }
-</style>
+        .bloqueo {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.6); display: flex;
+            justify-content: center; align-items: center; z-index: 10;
+            border-radius: 10px; color: #000; font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
-    <h1>🏎️ Supercars Cards Battle</h1>
+    <h1>🏎️ Supercars Cards</h1>
 
     <div id="menu">
         <div id="controles-iniciales">
-            <button onclick="crearPartida()">Crear Nueva Partida</button>
-            <br>
+            <button onclick="crearPartida()">Crear Partida</button>
             <input type="number" id="codigoInput" placeholder="Código">
             <button onclick="unirsePartida()">Unirse</button>
         </div>
-
         <div id="areaCreador" style="display:none;">
-            <p>Esperando a los demás jugadores...</p>
-            <button onclick="iniciarJuego()" style="background-color: #2a9d8f;">¡Empezar con los que estén!</button>
+            <p>Esperando jugadores...</p>
+            <button onclick="iniciarJuego()" style="background-color: #2a9d8f;">¡EMPEZAR YA!</button>
         </div>
     </div>
 
-    <div id="infoPartida">Conéctate para empezar</div>
-
-    <div id="cartaJugador">
-        </div>
+    <div id="infoPartida">Conéctate para jugar</div>
+    <div id="cartaJugador"></div>
 
     <script src="app.js"></script>
-
 </body>
 </html>
