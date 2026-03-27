@@ -1,3 +1,6 @@
+// ==========================================
+// 1. CONFIGURACIÓN DE FIREBASE
+// ==========================================
 const firebaseConfig = {
     apiKey: "AIzaSyDvoniQYLcoBcL0F_n_KoGo4ZYLAKwSooA",
     authDomain: "carta-de-coches.firebaseapp.com",
@@ -8,18 +11,23 @@ const firebaseConfig = {
     appId: "1:785928361183:web:4af4c916880d4af760056a"
 };
 
-if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+}
 const db = firebase.database();
 
 let jugadorId = null;
 let partidaId = null;
 
+// ==========================================
+// 2. BASE DE DATOS DE COCHES (36)
+// ==========================================
 const cartasBase = [
   {id:1, marca:"Ferrari", modelo:"SF90 Stradale", cilindrada:3990, longitud:4710, anchura:1972, altura:1186, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:6.1, precio:430000, imagenUrl:"https://i.imgur.com/uutouvW.jpeg"},
   {id:2, marca:"Bugatti", modelo:"Chiron", cilindrada:7993, longitud:4544, anchura:2038, altura:1212, cilindros:16, CV:1500, maxKMH:420, peso:1995, aceleracion:2.4, consumo:22.5, precio:2400000, imagenUrl:"https://i.imgur.com/8Exa3jF.jpeg"},
   {id:3, marca:"Lamborghini", modelo:"Revuelto", cilindrada:6498, longitud:4947, anchura:2033, altura:1160, cilindros:12, CV:1015, maxKMH:350, peso:1772, aceleracion:2.5, consumo:11.8, precio:500000, imagenUrl:"https://i.imgur.com/oOAmPpF.jpeg"},
   {id:4, marca:"Koenigsegg", modelo:"Jesko", cilindrada:5000, longitud:4610, anchura:2030, altura:1210, cilindros:8, CV:1600, maxKMH:480, peso:1420, aceleracion:2.5, consumo:15.0, precio:2800000, imagenUrl:"https://i.imgur.com/pAnutwN.jpeg"},
-  {id:5, marca:"McLaren", modelo:"750S", cilindrada:3994, longitud:4569, anchura:1930, altura:1196, cilindros:8, CV:750, maxKMH:332, peso:1389, aceleracion:2.8, consumo:12.2, precio:300000, imagenUrl:"https://i.imgur.com/blMvwc2.jpeg"},
+  {id:5, marca:"McLaren", modelo:"750S", cilindrada:3994, longitud:4569, anchura:1930, altura:1196, cilindros:8, CV:750, maxKMH:332, peso:1389, aceleracion:2.8, consumo:12.2, precio:300000, imagenUrl:"https://i.imgur.com/blMvw2.jpeg"},
   {id:6, marca:"Porsche", modelo:"911 GT3 RS", cilindrada:3996, longitud:4572, anchura:1900, altura:1322, cilindros:6, CV:525, maxKMH:296, peso:1450, aceleracion:3.2, consumo:13.4, precio:265000, imagenUrl:"https://i.imgur.com/G515zTD.jpeg"},
   {id:7, marca:"Rimac", modelo:"Nevera", cilindrada:0, longitud:4750, anchura:1986, altura:1208, cilindros:0, CV:1914, maxKMH:412, peso:2150, aceleracion:1.8, consumo:0.0, precio:2000000, imagenUrl:"https://i.imgur.com/mbpXxvV.jpeg"},
   {id:8, marca:"Aston Martin", modelo:"Valkyrie", cilindrada:6500, longitud:4506, anchura:1922, altura:1074, cilindros:12, CV:1160, maxKMH:350, peso:1030, aceleracion:2.5, consumo:14.0, precio:3000000, imagenUrl:"https://i.imgur.com/ywf2FSg.jpeg"},
@@ -53,6 +61,10 @@ const cartasBase = [
   {id:36, marca:"Pagani", modelo:"Zonda R", cilindrada:5987, longitud:4886, anchura:2014, altura:1141, cilindros:12, CV:750, maxKMH:350, peso:1070, aceleracion:2.7, consumo:18.0, precio:1500000, imagenUrl:"https://i.imgur.com/yJAkbcj.jpeg"}
 ];
 
+// ==========================================
+// 3. FUNCIONES DE GESTIÓN DE PARTIDA
+// ==========================================
+
 function crearPartida() {
     const id = (Math.floor(1000 + Math.random() * 9000)).toString();
     partidaId = id;
@@ -71,13 +83,15 @@ function crearPartida() {
 
 function unirsePartida() {
     const id = document.getElementById("codigoInput").value.toString().trim();
-    if (!id) return alert("Pon el código");
+    if (!id) return alert("Escribe el código de la partida");
     partidaId = id;
     db.ref("partidas/" + id).once("value", snap => {
         const data = snap.val();
-        if (!data) return alert("No existe");
+        if (!data) return alert("La partida no existe");
+        
         const n = Object.keys(data.jugadores).length;
         jugadorId = "jugador" + n;
+        
         db.ref(`partidas/${id}/jugadores/${jugadorId}`).set({ activo: true, cartas: [] })
         .then(() => {
             document.getElementById("controles-iniciales").style.display = "none";
@@ -90,26 +104,39 @@ function unirsePartida() {
 function iniciarJuego() {
     db.ref("partidas/" + partidaId).once("value", snap => {
         const data = snap.val();
-        const lista = Object.keys(data.jugadores);
-        const mazo = [...cartasBase].sort(() => Math.random() - 0.5);
-        const repartir = Math.floor(mazo.length / lista.length);
+        const listaJugadores = Object.keys(data.jugadores);
+        const mazoMezclado = [...cartasBase].sort(() => Math.random() - 0.5);
+        const cartasPorPersona = Math.floor(mazoMezclado.length / listaJugadores.length);
+        
         let updates = { "config/estado": "jugando" };
-        lista.forEach((id, i) => {
-            updates[`jugadores/${id}/cartas`] = mazo.slice(i * repartir, (i + 1) * repartir);
+        listaJugadores.forEach((id, index) => {
+            updates[`jugadores/${id}/cartas`] = mazoMezclado.slice(index * cartasPorPersona, (index + 1) * cartasPorPersona);
         });
+        
         db.ref("partidas/" + partidaId).update(updates);
     });
 }
 
+// ==========================================
+// 4. LÓGICA DE CHAT
+// ==========================================
+
 function enviarMensaje() {
-    const texto = document.getElementById("inputChat").value.trim();
+    const input = document.getElementById("inputChat");
+    const texto = input.value.trim();
     if (!texto || !partidaId) return;
+    
     db.ref(`partidas/${partidaId}/mensajes`).push({
         autor: jugadorId,
-        texto: texto
+        texto: texto,
+        timestamp: Date.now()
     });
-    document.getElementById("inputChat").value = "";
+    input.value = "";
 }
+
+// ==========================================
+// 5. ESCUCHA Y RENDERIZADO (TODO EN UNO)
+// ==========================================
 
 function escucharPartida() {
     db.ref("partidas/" + partidaId).on("value", snap => {
@@ -118,35 +145,43 @@ function escucharPartida() {
         
         const area = document.getElementById("cartaJugador");
         const info = document.getElementById("infoPartida");
-
-        // LÓGICA DEL CHAT
         const chatArea = document.getElementById("lista-mensajes");
+
+        // --- RENDERIZAR CHAT (Independiente del estado) ---
         if (data.mensajes) {
-            chatArea.innerHTML = "";
+            let htmlChat = "";
             Object.values(data.mensajes).forEach(m => {
                 const color = m.autor === jugadorId ? "#a8dadc" : "#e63946";
-                chatArea.innerHTML += `<div class="msg"><b style="color:${color}">${m.autor}:</b> ${m.texto}</div>`;
+                const nombre = m.autor === jugadorId ? "TÚ" : m.autor;
+                htmlChat += `<div class="msg"><b style="color:${color}">${nombre}:</b> ${m.texto}</div>`;
             });
+            chatArea.innerHTML = htmlChat;
             chatArea.scrollTop = chatArea.scrollHeight;
         }
 
+        // --- PANTALLA DE ESPERA ---
         if (data.config.estado === "esperando") {
             info.innerHTML = `SALA DE ESPERA | Código: ${partidaId}`;
+            area.innerHTML = `<div style="text-align:center; padding:20px;">
+                                <h3>Jugadores conectados: ${Object.keys(data.jugadores).length}</h3>
+                                <p>Esperando a que el creador comience...</p>
+                              </div>`;
             return;
         }
 
+        // --- MODO DUELO (REVELACIÓN) ---
         if (data.revelacion) {
-            let html = "";
+            let htmlDuelo = "";
             Object.keys(data.revelacion.cartas).forEach(id => {
                 const c = data.revelacion.cartas[id];
                 const esGanador = id === data.revelacion.ganador;
                 const esEmpate = data.revelacion.ganador === "empate";
-                html += `
+                htmlDuelo += `
                     <div class="duelo-container">
                         ${esGanador ? '<div class="estrella">⭐</div>' : ''}
                         ${esEmpate ? '<div class="estrella" style="filter:none">🤝</div>' : ''}
                         <div class="card revelada ${esGanador ? 'ganadora' : ''} ${esEmpate ? 'empate-border' : ''}">
-                            <h2>${id === jugadorId ? "TU CARTA" : "RIVAL"}</h2>
+                            <h2>${id === jugadorId ? "TU CARTA" : "RIVAL ("+id+")"}</h2>
                             <img src="${c.imagenUrl}">
                             <div style="text-align:center; padding: 5px;">
                                 <small>${data.revelacion.atributo.toUpperCase()}</small><br>
@@ -155,86 +190,103 @@ function escucharPartida() {
                         </div>
                     </div>`;
             });
-            area.innerHTML = html;
-            info.innerHTML = data.revelacion.ganador === "empate" ? "¡EMPATE! NADIE PIERDE" : "¡DUELO FINALIZADO!";
+            area.innerHTML = htmlDuelo;
+            info.innerHTML = data.revelacion.ganador === "empate" ? "¡EMPATE!" : "¡RESULTADO!";
             return;
         }
 
+        // --- MODO JUEGO NORMAL ---
+        if (!data.jugadores[jugadorId]) return;
         const misCartas = data.jugadores[jugadorId].cartas || [];
+        
         if (misCartas.length === 0) { 
-            area.innerHTML = "<div class='card'><h2>💀 ELIMINADO</h2><p>Te quedaste sin cartas.</p></div>"; 
+            area.innerHTML = "<div class='card'><h2>💀 ELIMINADO</h2><p>Te has quedado sin cartas.</p></div>"; 
             return; 
         }
         
-        const carta = misCartas[0];
+        const cartaActual = misCartas[0];
         const esMiTurno = data.turno === jugadorId;
         info.innerHTML = `Cartas: ${misCartas.length} | Turno: ${esMiTurno ? "TUYO" : data.turno}`;
 
         area.innerHTML = `
             <div class="card">
-                <h2>${carta.marca} ${carta.modelo}</h2>
-                <img src="${carta.imagenUrl}">
+                <h2>${cartaActual.marca} ${cartaActual.modelo}</h2>
+                <img src="${cartaActual.imagenUrl}">
                 <div class="grid-stats">
-                    <button class="stat-btn" onclick="lanzarAtaque('cilindrada')">Cilindrada <b>${carta.cilindrada}</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('longitud')">Longitud <b>${carta.longitud}</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('cilindros')">Cilindros <b>${carta.cilindros}</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('anchura')">Anchura <b>${carta.anchura}</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('CV')">CV <b>${carta.CV}</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('altura')">Altura <b>${carta.altura}</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('maxKMH')">Velocidad <b>${carta.maxKMH}</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('peso')">Peso <b>${carta.peso}</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('aceleracion')">0-100 <b>${carta.aceleracion}</b></button>
-                    <button class="stat-btn" onclick="lanzarAtaque('consumo')">Consumo <b>${carta.consumo}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('cilindrada')">Cilindrada <b>${cartaActual.cilindrada}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('longitud')">Longitud <b>${cartaActual.longitud}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('cilindros')">Cilindros <b>${cartaActual.cilindros}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('anchura')">Anchura <b>${cartaActual.anchura}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('CV')">CV <b>${cartaActual.CV}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('altura')">Altura <b>${cartaActual.altura}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('maxKMH')">Velocidad <b>${cartaActual.maxKMH}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('peso')">Peso <b>${cartaActual.peso}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('aceleracion')">0-100 <b>${cartaActual.aceleracion}</b></button>
+                    <button class="stat-btn" onclick="lanzarAtaque('consumo')">Consumo <b>${cartaActual.consumo}</b></button>
                 </div>
                 ${!esMiTurno ? `<div class="bloqueo">Turno de ${data.turno}...</div>` : ""}
             </div>`;
     });
 }
 
-function lanzarAtaque(at) {
+// ==========================================
+// 6. LÓGICA DE ATAQUE Y REGLAS
+// ==========================================
+
+function lanzarAtaque(atributo) {
     db.ref("partidas/" + partidaId).once("value", snap => {
         const data = snap.val();
         if (data.turno !== jugadorId || data.revelacion) return;
 
         let ganadorId = "";
-        let mejorV = (at === 'aceleracion') ? Infinity : -Infinity;
-        let cartasDuelo = {};
-        let hayEmpate = false;
+        let mejorValor = (atributo === 'aceleracion') ? Infinity : -Infinity;
+        let cartasEnDuelo = {};
+        let esEmpate = false;
 
+        // Comprobar cartas de todos los jugadores activos
         Object.keys(data.jugadores).forEach(id => {
             const mazo = data.jugadores[id].cartas;
             if (mazo && mazo.length > 0) {
-                const c = mazo[0];
-                cartasDuelo[id] = c;
-                const v = c[at];
-                if (v === mejorV) {
-                    hayEmpate = true;
-                } else if (at === 'aceleracion' ? v < mejorV : v > mejorV) {
-                    mejorV = v;
+                const carta = mazo[0];
+                cartasEnDuelo[id] = carta;
+                const valor = carta[atributo];
+
+                if (valor === mejorValor) {
+                    esEmpate = true;
+                } else if (atributo === 'aceleracion' ? valor < mejorValor : valor > mejorValor) {
+                    mejorValor = valor;
                     ganadorId = id;
-                    hayEmpate = false;
+                    esEmpate = false;
                 }
             }
         });
 
-        if (hayEmpate) {
-            data.revelacion = { cartas: cartasDuelo, ganador: "empate", atributo: at };
+        if (esEmpate) {
+            // Empate: Nadie pierde cartas, se muestra la revelación y se repite turno
+            data.revelacion = { cartas: cartasEnDuelo, ganador: "empate", atributo: atributo };
         } else {
+            // Ganador: Recoge las cartas del pozo
             const pozo = [];
             Object.keys(data.jugadores).forEach(id => {
-                if (data.jugadores[id].cartas) pozo.push(data.jugadores[id].cartas.shift());
+                if (data.jugadores[id].cartas) {
+                    pozo.push(data.jugadores[id].cartas.shift());
+                }
             });
             data.jugadores[ganadorId].cartas.push(...pozo);
             data.turno = ganadorId;
-            data.revelacion = { cartas: cartasDuelo, ganador: ganadorId, atributo: at };
+            data.revelacion = { cartas: cartasEnDuelo, ganador: ganadorId, atributo: atributo };
         }
 
         db.ref("partidas/" + partidaId).update(data);
-        setTimeout(() => db.ref(`partidas/${partidaId}/revelacion`).remove(), 4000);
+        
+        // Limpiar revelación después de 4 segundos
+        setTimeout(() => {
+            db.ref(`partidas/${partidaId}/revelacion`).remove();
+        }, 4000);
     });
 }
 
-// Escuchar tecla Enter en el chat
+// Tecla Enter para el chat
 document.addEventListener('keypress', (e) => {
     if(e.key === 'Enter' && document.activeElement.id === 'inputChat') enviarMensaje();
 });
