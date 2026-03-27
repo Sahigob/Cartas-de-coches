@@ -1,211 +1,145 @@
-/* ==========================================
-   VARIABLES Y BASE
-   ========================================== */
-:root {
-    --primary: #e63946;    /* Rojo deportivo */
-    --secondary: #1d3557;  /* Azul oscuro profundo */
-    --accent: #457b9d;     /* Azul acero */
-    --light: #f1faee;      /* Blanco roto */
-    --success: #2a9d8f;    /* Verde victoria */
-    --shadow: rgba(0, 0, 0, 0.4);
-}
-
+/* --- CONFIGURACIÓN GENERAL --- */
 body {
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: #0b132b; /* Fondo noche muy oscuro */
-    background-image: radial-gradient(circle, #1c2541 0%, #0b132b 100%);
-    color: var(--light);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #1a1a1a; /* Fondo oscuro para que resalten las cartas */
+    color: #333;
     margin: 0;
+    padding: 10px;
     display: flex;
     flex-direction: column;
     align-items: center;
     min-height: 100vh;
-    padding: 20px;
 }
 
-h1 {
-    margin: 10px 0 20px 0;
-    text-transform: uppercase;
-    letter-spacing: 3px;
-    color: var(--primary);
-    text-shadow: 0 0 10px rgba(230, 57, 70, 0.5);
-    font-style: italic;
-}
-
-/* ==========================================
-   MENÚ Y CONTROLES
-   ========================================== */
-#menu {
-    background: rgba(255, 255, 255, 0.05);
-    padding: 25px;
-    border-radius: 20px;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 8px 32px var(--shadow);
-    margin-bottom: 20px;
-    text-align: center;
-    width: 100%;
-    max-width: 400px;
-}
-
-input {
-    padding: 12px;
-    border-radius: 8px;
-    border: 2px solid var(--accent);
-    background: #0b132b;
-    color: white;
-    width: 120px;
-    font-size: 18px;
-    text-align: center;
-    margin: 10px;
-}
-
-button {
-    padding: 12px 24px;
-    border: none;
-    border-radius: 8px;
-    background-color: var(--primary);
-    color: white;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    box-shadow: 0 4px 0 #b32d38;
-}
-
-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 0 #b32d38;
-    background-color: #ff4d5a;
-}
-
-button:active {
-    transform: translateY(2px);
-    box-shadow: 0 0 0 #b32d38;
-}
-
-/* ==========================================
-   INFO DE PARTIDA
-   ========================================== */
-#infoPartida {
-    background: var(--accent);
-    padding: 10px 25px;
-    border-radius: 50px;
-    font-weight: bold;
-    margin-bottom: 25px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-    border: 2px solid rgba(255,255,255,0.2);
-}
-
-/* ==========================================
-   LA CARTA (DISEÑO TRADING CARD)
-   ========================================== */
+/* --- CONTENEDOR DE LA CARTA --- */
 .card {
-    background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
-    color: #1d3557;
-    width: 320px;
+    background: #ffffff;
+    border-radius: 15px;
     padding: 12px;
-    border-radius: 18px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.6), 0 0 20px rgba(255,255,255,0.1);
-    border: 10px solid #222; /* Borde tipo cromo o fibra de carbono */
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+    width: 90vw;
+    max-width: 340px; /* Tamaño ideal para móvil */
+    margin: 0 auto;
+    border: 4px solid #444;
     position: relative;
     overflow: hidden;
 }
 
+/* --- TÍTULO DEL COCHE --- */
 .card h2 {
-    margin: 5px 0 10px 0;
-    font-size: 1.5rem;
+    margin: 0 0 10px 0;
+    font-size: 1.1rem;
     text-align: center;
-    background: var(--secondary);
-    color: white;
-    padding: 5px;
-    border-radius: 5px;
-    transform: skewX(-5deg);
+    color: #1a1a1a;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 5px;
 }
 
+/* --- IMAGEN DEL COCHE (COMPACTA) --- */
 .card img {
     width: 100%;
-    height: 190px;
+    height: 150px; /* Altura reducida para evitar scroll */
     object-fit: cover;
     border-radius: 10px;
-    border: 3px solid #333;
-    margin-bottom: 15px;
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    margin-bottom: 12px;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
 }
 
-/* Grilla de atributos */
+/* --- GRID DE ATRIBUTOS (2 POR FILA) --- */
 .grid-stats {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 6px;
+    grid-template-columns: 1fr 1fr; /* Dos columnas iguales */
+    gap: 8px;
 }
 
+/* --- BOTONES DE ATRIBUTOS --- */
 .stat-btn {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #fff;
-    border: 1px solid #ccc;
-    padding: 10px 15px;
-    border-radius: 6px;
-    font-size: 14px;
-    color: #333;
-    transition: all 0.2s ease;
+    background: #fdfdfd;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 6px 4px;
     cursor: pointer;
-    width: 100%;
-    box-shadow: 0 2px 0 #ddd;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.2s ease;
+    font-size: 0.75rem; /* Texto pequeño para que quepa todo */
+    color: #666;
 }
 
-.stat-btn:hover {
-    background: var(--primary);
-    color: white;
-    border-color: var(--primary);
+.stat-btn:active {
+    transform: scale(0.95);
+    background: #e9ecef;
 }
 
 .stat-btn b {
-    font-size: 16px;
-    color: inherit;
+    font-size: 0.9rem;
+    color: #e63946; /* Color resaltado para el valor numérico */
+    margin-top: 2px;
 }
 
-/* Bloqueo cuando no es tu turno */
+/* --- BLOQUEO DE TURNO --- */
 .bloqueo {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(255, 255, 255, 0.7);
     display: flex;
-    align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 1.2rem;
+    align-items: center;
     font-weight: bold;
-    text-align: center;
-    border-radius: 8px;
+    color: #333;
+    font-size: 1.2rem;
     z-index: 10;
-    pointer-events: all;
     backdrop-filter: blur(2px);
 }
 
-/* ==========================================
-   EFECTOS ESPECIALES
-   ========================================== */
-#areaCreador {
-    animation: fadeIn 0.5s ease-in;
+/* --- INFO DE PARTIDA Y MENSAJES --- */
+#infoPartida {
+    color: white;
+    text-align: center;
+    margin-bottom: 15px;
+    font-size: 0.9rem;
+    background: rgba(0,0,0,0.3);
+    padding: 8px 15px;
+    border-radius: 20px;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+/* --- CONTROLES INICIALES --- */
+#controles-iniciales, #areaCreador {
+    background: white;
+    padding: 20px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
-/* Ajuste para pantallas pequeñas */
-@media (max-width: 450px) {
-    .card {
-        width: 280px;
-    }
-    h1 {
-        font-size: 1.5rem;
-    }
+input {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-bottom: 10px;
+    width: 80%;
+}
+
+button.main-btn {
+    background: #2a9d8f;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 5px;
+}
+
+/* --- ANIMACIÓN DE VICTORIA --- */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
 }
