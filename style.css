@@ -1,11 +1,14 @@
+/* --- VARIABLES GLOBALES --- */
 :root {
     --primary: #e63946;    /* Rojo deportivo */
     --secondary: #1d3557;  /* Azul oscuro profundo */
     --light: #f1faee;      /* Blanco roto */
-    --accent: #a8dadc;     /* Azul claro/Cian */
-    --gold: #ffca28;       /* Dorado para el ganador */
+    --accent: #a8dadc;     /* Azul claro */
+    --gold: #ffca28;       /* Dorado */
+    --negro-puro: #000000; /* Negro para los textos de la carta */
 }
 
+/* --- RESET GENERAL --- */
 * { 
     box-sizing: border-box; 
     margin: 0; 
@@ -51,8 +54,7 @@ input {
     width: 120px; 
     margin: 5px; 
     font-size: 1rem;
-    outline: none;
-    color: #333; /* Texto oscuro dentro de inputs */
+    color: var(--negro-puro); /* Texto negro en inputs */
 }
 
 button {
@@ -64,11 +66,10 @@ button {
     font-weight: bold;
     cursor: pointer;
     text-transform: uppercase;
-    transition: transform 0.2s, background 0.3s;
+    transition: transform 0.2s;
 }
 
 button:hover {
-    background-color: #f14c5a;
     transform: scale(1.05);
 }
 
@@ -93,8 +94,7 @@ button:hover {
 
 /* --- ESTILO DE LA CARTA --- */
 .card {
-    background: white;
-    color: #333;
+    background: #ffffff !important;
     width: 90vw;
     max-width: 340px;
     padding: 12px;
@@ -108,10 +108,7 @@ button:hover {
     font-size: 1.1rem; 
     text-align: center; 
     margin-bottom: 10px; 
-    color: var(--secondary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    color: var(--secondary) !important;
 }
 
 .card img { 
@@ -123,36 +120,41 @@ button:hover {
     border: 1px solid #ddd;
 }
 
-/* --- BOTONES DE ATRIBUTOS (GRID) --- */
+/* --- BOTONES DE ATRIBUTOS (SOLUCIÓN TEXTO NEGRO) --- */
 .grid-stats { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
     gap: 8px; 
 }
 
+/* Forzamos el color negro con máxima prioridad */
 .stat-btn {
-    display: flex; 
-    flex-direction: column; 
-    align-items: center;
-    background: #fdfdfd; 
-    border: 1px solid #eee; 
-    padding: 6px 4px;
-    border-radius: 10px; 
-    font-size: 0.75rem; 
-    cursor: pointer;
-    transition: background 0.2s;
+    display: flex !important; 
+    flex-direction: column !important; 
+    align-items: center !important;
+    background: #f8f9fa !important; 
+    border: 1px solid #ddd !important; 
+    padding: 8px 4px !important;
+    border-radius: 10px !important; 
+    cursor: pointer !important;
     
-    /* CAMBIO CLAVE AQUÍ: */
-    color: #333 !important; 
+    /* PROPIEDADES DE COLOR CRÍTICAS */
+    color: #000000 !important; 
+    text-shadow: none !important;
+    -webkit-text-fill-color: #000000 !important;
+    font-size: 0.75rem !important;
 }
 
 .stat-btn:hover {
-    background: #f0f0f0;
+    background: #eeeeee !important;
 }
 
+/* El número del atributo (ej: 1000 CV) */
 .stat-btn b { 
     color: var(--primary) !important; 
-    font-size: 0.95rem; 
+    -webkit-text-fill-color: var(--primary) !important;
+    font-size: 0.95rem !important; 
+    font-weight: 800 !important;
 }
 
 /* --- ESTADOS ESPECIALES (DUELO) --- */
@@ -169,14 +171,13 @@ button:hover {
 }
 
 @keyframes bounce { 
-    from { transform: translateY(0) scale(1); } 
-    to { transform: translateY(-10px) scale(1.2); } 
+    from { transform: translateY(0); } 
+    to { transform: translateY(-10px); } 
 }
 
 .card.revelada { 
     width: 45vw; 
     max-width: 170px; 
-    font-size: 0.7rem; 
     border-width: 4px; 
 }
 
@@ -187,22 +188,18 @@ button:hover {
     box-shadow: 0 0 25px var(--gold); 
 }
 
-.empate-border { 
-    border-color: var(--accent) !important; 
-    box-shadow: 0 0 20px var(--accent);
-}
-
 .bloqueo {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(255,255,255,0.7); 
+    background: rgba(255,255,255,0.85) !important; 
     backdrop-filter: blur(2px);
     display: flex; justify-content: center; align-items: center; 
     z-index: 10; border-radius: 15px; 
-    color: #000; font-weight: bold; font-size: 1.2rem;
+    color: #000000 !important; /* Texto de bloqueo en negro */
+    font-weight: bold; font-size: 1.1rem;
     text-align: center; padding: 20px;
 }
 
-/* --- SECCIÓN DEL CHAT --- */
+/* --- CHAT --- */
 #chat-container {
     width: 100%;
     max-width: 400px;
@@ -211,7 +208,6 @@ button:hover {
     margin-top: 25px;
     padding: 12px;
     border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
 }
 
 #lista-mensajes {
@@ -219,10 +215,6 @@ button:hover {
     overflow-y: auto;
     font-size: 0.9rem;
     margin-bottom: 10px;
-    padding-right: 5px;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
 }
 
 #lista-mensajes::-webkit-scrollbar { width: 5px; }
@@ -232,25 +224,22 @@ button:hover {
     background: rgba(255,255,255,0.05);
     padding: 5px 10px;
     border-radius: 8px;
-    line-height: 1.4; 
+    margin-bottom: 5px;
 }
 
-.chat-input-area { 
-    display: flex; 
-    gap: 8px; 
-}
+.chat-input-area { display: flex; gap: 8px; }
 
 #inputChat { 
     flex-grow: 1; 
     margin: 0; 
     width: auto; 
-    font-size: 0.9rem; 
     padding: 8px;
-    color: #333;
+    color: var(--negro-puro);
 }
 
+/* --- RESPONSIVE --- */
 @media (max-width: 360px) {
     .card.revelada { width: 42vw; }
     h1 { font-size: 1.1rem; }
-    .stat-btn { font-size: 0.65rem; }
+    .stat-btn { font-size: 0.65rem !important; }
 }
