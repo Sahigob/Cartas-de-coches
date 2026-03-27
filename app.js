@@ -18,7 +18,7 @@ const db = firebase.database();
 // 2. BASE DE DATOS DE COCHES (36 TOTAL)
 // ==========================================
 const cartasBase = [
-  {id:1, marca:"Ferrari", modelo:"SF90 Stradale", cilindrada:3990, longitud:4710, anchura:1972, altura:1186, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:6.1, precio:430000, imagenUrl:"https://https://i.imgur.com/uutouvW.jpeg"},
+  {id:1, marca:"Ferrari", modelo:"SF90 Stradale", cilindrada:3990, longitud:4710, anchura:1972, altura:1186, cilindros:8, CV:1000, maxKMH:340, peso:1570, aceleracion:2.5, consumo:6.1, precio:430000, imagenUrl:"https://i.imgur.com/uutouvW.jpeg"},
   {id:2, marca:"Bugatti", modelo:"Chiron", cilindrada:7993, longitud:4544, anchura:2038, altura:1212, cilindros:16, CV:1500, maxKMH:420, peso:1995, aceleracion:2.4, consumo:22.5, precio:2400000, imagenUrl:"https://i.imgur.com/lamborghini-revuelto.jpg"},
   {id:3, marca:"Lamborghini", modelo:"Revuelto", cilindrada:6498, longitud:4947, anchura:2033, altura:1160, cilindros:12, CV:1015, maxKMH:350, peso:1772, aceleracion:2.5, consumo:11.8, precio:500000, imagenUrl:"https://i.imgur.com/lamborghini-revuelto.jpg"},
   {id:4, marca:"Koenigsegg", modelo:"Jesko", cilindrada:5000, longitud:4610, anchura:2030, altura:1210, cilindros:8, CV:1600, maxKMH:480, peso:1420, aceleracion:2.5, consumo:15.0, precio:2800000, imagenUrl:"https://i.imgur.com/pAnutwN.jpeg"},
@@ -155,7 +155,7 @@ function escucharPartida() {
         if (data.ultimoResultado) {
             const res = data.ultimoResultado;
             if (res.ganador === jugadorId) {
-                mensajeRonda = `<div style="color: #2a9d8f; font-weight: bold; margin-bottom: 10px; animation: pulse 1s infinite;">✅ ¡GANASTE LA RONDA! (${res.valor} en ${res.atributo})</div>`;
+                mensajeRonda = `<div style="color: #2a9d8f; font-weight: bold; margin-bottom: 10px; animation: pulse 1s infinite;">✅ ¡GANASTE LA RONDA! (${res.valor}${res.atributo === 'ACELERACION' ? 's' : ''} en ${res.atributo})</div>`;
             } else {
                 mensajeRonda = `<div style="color: #e63946; font-weight: bold; margin-bottom: 10px;">❌ PERDISTE LA RONDA (${res.ganador} ganó con ${res.valor})</div>`;
             }
@@ -196,7 +196,7 @@ function escucharPartida() {
 }
 
 // ==========================================
-// 6. LÓGICA DE ATAQUE
+// 6. LÓGICA DE ATAQUE (CON REGLA ESPECIAL PARA ACELERACIÓN)
 // ==========================================
 
 function lanzarAtaque(atributo) {
@@ -205,16 +205,28 @@ function lanzarAtaque(atributo) {
         if (data.turno !== jugadorId) return;
 
         let ganadorId = "";
-        let valorMaximo = -Infinity;
+        // Si es aceleración, buscamos el valor más pequeño, por eso iniciamos en Infinity.
+        // Si es otro, buscamos el más grande, por eso iniciamos en -Infinity.
+        let mejorValor = (atributo === 'aceleracion') ? Infinity : -Infinity;
 
         // Comparamos a todos los jugadores que tengan cartas
         Object.keys(data.jugadores).forEach(id => {
             const mazo = data.jugadores[id].cartas;
             if (mazo && mazo.length > 0) {
-                const valor = mazo[0][atributo];
-                if (valor > valorMaximo) {
-                    valorMaximo = valor;
-                    ganadorId = id;
+                const valorActual = mazo[0][atributo];
+                
+                if (atributo === 'aceleracion') {
+                    // Gana el número más pequeño (ej: 2.5s gana a 3.0s)
+                    if (valorActual < mejorValor) {
+                        mejorValor = valorActual;
+                        ganadorId = id;
+                    }
+                } else {
+                    // Gana el número más grande (ej: 1000 CV gana a 500 CV)
+                    if (valorActual > mejorValor) {
+                        mejorValor = valorActual;
+                        ganadorId = id;
+                    }
                 }
             }
         });
@@ -223,7 +235,7 @@ function lanzarAtaque(atributo) {
         data.ultimoResultado = {
             ganador: ganadorId,
             atributo: atributo.toUpperCase(),
-            valor: valorMaximo
+            valor: mejorValor
         };
 
         // Recoger cartas de la mesa
