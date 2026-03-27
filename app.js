@@ -56,7 +56,8 @@ const cartasBase = [
 
 function crearPartida() {
     const id = Math.floor(1000 + Math.random() * 9000);
-    partidaId = id; jugadorId = "jugador0";
+    partidaId = id; 
+    jugadorId = "jugador0";
     db.ref("partidas/" + id).set({
         config: { estado: "esperando" },
         jugadores: { jugador0: { cartas: [] } },
@@ -72,14 +73,17 @@ function unirsePartida() {
     const id = document.getElementById("codigoInput").value;
     if (!id) return;
     partidaId = id;
-    db.ref("partidas/" + id).once("value", snap => {
-        const data = snap.val();
-        if (!data) return alert("Código no válido");
-        const n = Object.keys(data.jugadores).length;
+    db.ref("partidas/" + id + "/jugadores").once("value", snap => {
+        const jugadores = snap.val();
+        if (!jugadores) return alert("Partida no encontrada");
+        
+        const n = Object.keys(jugadores).length;
         jugadorId = "jugador" + n;
+        
         db.ref(`partidas/${id}/jugadores/${jugadorId}`).set({ cartas: [] })
         .then(() => {
             document.getElementById("controles-iniciales").style.display = "none";
+            document.getElementById("infoPartida").innerHTML = "¡Conectado! Esperando inicio...";
             escucharPartida();
         });
     });
@@ -107,7 +111,8 @@ function escucharPartida() {
         const info = document.getElementById("infoPartida");
 
         if (data.config.estado === "esperando") {
-            info.innerHTML = `SALA DE ESPERA | Código: ${partidaId}`;
+            const numJ = Object.keys(data.jugadores).length;
+            info.innerHTML = `SALA DE ESPERA | Código: ${partidaId} | Jugadores: ${numJ}`;
             return;
         }
 
@@ -122,7 +127,7 @@ function escucharPartida() {
                         ${esGanador ? '<div class="estrella">⭐</div>' : ''}
                         ${esEmpate ? '<div class="estrella" style="filter:none">🤝</div>' : ''}
                         <div class="card revelada ${esGanador ? 'ganadora' : ''} ${esEmpate ? 'empate-border' : ''}">
-                            <h2>${id === jugadorId ? "TU CARTA" : "RIVAL"}</h2>
+                            <h2>${id === jugadorId ? "TUYA" : "RIVAL"}</h2>
                             <img src="${c.imagenUrl}">
                             <div style="text-align:center; padding: 2px;">
                                 <small>${data.revelacion.atributo.toUpperCase()}</small><br>
@@ -132,16 +137,16 @@ function escucharPartida() {
                     </div>`;
             });
             area.innerHTML = html;
-            info.innerHTML = data.revelacion.ganador === "empate" ? "<span class='empate-msg'>¡EMPATE! REPITE TURNO</span>" : "¡DUELO!";
+            info.innerHTML = data.revelacion.ganador === "empate" ? "<span class='empate-msg'>¡EMPATE! REPITE TURNO</span>" : "¡RESULTADO!";
             return;
         }
 
         const misCartas = data.jugadores[jugadorId].cartas || [];
-        if (misCartas.length === 0) { area.innerHTML = "<h2>💀 SIN CARTAS</h2>"; return; }
+        if (misCartas.length === 0) { area.innerHTML = "<h2>💀 HAS PERDIDO</h2>"; return; }
         
         const carta = misCartas[0];
         const esMiTurno = data.turno === jugadorId;
-        info.innerHTML = `Tus Cartas: ${misCartas.length} | Turno de: ${data.turno}`;
+        info.innerHTML = `Mazo: ${misCartas.length} | Turno: ${data.turno === jugadorId ? "TUYO" : data.turno}`;
 
         area.innerHTML = `
             <div class="card">
@@ -198,8 +203,12 @@ function lanzarAtaque(at) {
             data.turno = ganadorId;
         }
 
-        data.revelacion = { cartas: cartasDuelo, ganador: ganadorId, atributo: at };
-        db.ref("partidas/" + partidaId).set(data);
+        db.ref("partidas/" + partidaId).update({
+            jugadores: data.jugadores,
+            turno: data.turno,
+            revelacion: { cartas: cartasDuelo, ganador: ganadorId, atributo: at }
+        });
+
         setTimeout(() => db.ref(`partidas/${partidaId}/revelacion`).remove(), 4000);
     });
 }
