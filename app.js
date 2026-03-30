@@ -76,6 +76,7 @@ function crearPartida() {
     }).then(() => {
         document.getElementById("areaCreador").style.display = "block";
         document.getElementById("controles-iniciales").style.display = "none";
+        // El chat se activa aquí
         document.getElementById("chat-container").style.display = "block";
         escucharPartida();
     });
@@ -146,6 +147,13 @@ function escucharPartida() {
         const area = document.getElementById("cartaJugador");
         const info = document.getElementById("infoPartida");
         const chatArea = document.getElementById("lista-mensajes");
+        const menu = document.getElementById("menu"); // Agregado para control de visibilidad
+
+        // --- CONTROL DE VISIBILIDAD DEL MENÚ ---
+        // Si el estado es "jugando", ocultamos el menú de arriba completamente
+        if (data.config.estado === "jugando") {
+            menu.style.display = "none";
+        }
 
         // --- RENDERIZAR CHAT (Independiente del estado) ---
         if (data.mensajes) {
@@ -243,7 +251,6 @@ function lanzarAtaque(atributo) {
         let cartasEnDuelo = {};
         let esEmpate = false;
 
-        // Comprobar cartas de todos los jugadores activos
         Object.keys(data.jugadores).forEach(id => {
             const mazo = data.jugadores[id].cartas;
             if (mazo && mazo.length > 0) {
@@ -262,10 +269,8 @@ function lanzarAtaque(atributo) {
         });
 
         if (esEmpate) {
-            // Empate: Nadie pierde cartas, se muestra la revelación y se repite turno
             data.revelacion = { cartas: cartasEnDuelo, ganador: "empate", atributo: atributo };
         } else {
-            // Ganador: Recoge las cartas del pozo
             const pozo = [];
             Object.keys(data.jugadores).forEach(id => {
                 if (data.jugadores[id].cartas) {
@@ -279,14 +284,12 @@ function lanzarAtaque(atributo) {
 
         db.ref("partidas/" + partidaId).update(data);
         
-        // Limpiar revelación después de 4 segundos
         setTimeout(() => {
             db.ref(`partidas/${partidaId}/revelacion`).remove();
         }, 4000);
     });
 }
 
-// Tecla Enter para el chat
 document.addEventListener('keypress', (e) => {
     if(e.key === 'Enter' && document.activeElement.id === 'inputChat') enviarMensaje();
 });
