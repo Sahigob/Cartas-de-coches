@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supercars Battle - Duelo de Cartas</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -16,7 +16,6 @@
         --accent: #a8dadc;
     }
 
-    /* Evitamos el scroll horizontal en todo el documento */
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -28,7 +27,6 @@
         align-items: center;
         min-height: 100vh;
         padding: 10px;
-        overflow-x: hidden; /* <--- Esto evita que la pantalla se mueva a los lados */
     }
 
     h1 { font-size: 1.2rem; margin: 10px 0; text-transform: uppercase; }
@@ -44,7 +42,7 @@
         margin-bottom: 10px;
     }
 
-    input { padding: 8px; border-radius: 5px; border: none; width: 100px; margin: 5px; color: #000; font-size: 16px; }
+    input { padding: 8px; border-radius: 5px; border: none; width: 100px; margin: 5px; color: #000; }
     
     button {
         padding: 10px 15px;
@@ -74,13 +72,12 @@
         justify-content: center;
         gap: 10px;
         width: 100%;
-        max-width: 100vw; /* Asegura que el contenedor no sea más ancho que la pantalla */
     }
 
     .card {
         background: white;
         color: #333;
-        width: 90vw; /* Ajustado para dejar un pequeño margen lateral */
+        width: 92vw;
         max-width: 320px;
         padding: 10px;
         border-radius: 15px;
@@ -94,6 +91,7 @@
 
     .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 
+    /* --- EL CAMBIO ESTÁ AQUÍ --- */
     .stat-btn {
         display: flex; 
         flex-direction: column; 
@@ -104,6 +102,7 @@
         border-radius: 6px; 
         font-size: 0.7rem; 
         cursor: pointer;
+        /* Forzamos el color negro para que no herede el blanco del body */
         color: #000000 !important; 
     }
 
@@ -112,30 +111,17 @@
         font-size: 0.85rem; 
     }
 
-    /* --- AJUSTE CLAVE PARA EL DUELO --- */
-    .duelo-container { 
-        position: relative;
-        width: 45%; /* <--- Al ser 45%, caben 2 cartas en una fila sin salirse */
-        min-width: 140px; 
-    }
-
-    .card.revelada { 
-        width: 100%; /* La carta ocupa el 100% de su contenedor de duelo */
-        font-size: 0.65rem; 
-        border-width: 3px; 
-        padding: 5px;
-    }
-    
-    .card.revelada img { height: 70px; }
-    .card.revelada h2 { font-size: 0.8rem; }
-
+    /* --- DUELO Y EMPATE --- */
+    .duelo-container { position: relative; }
     .estrella {
-        position: absolute; top: -10px; right: -10px; font-size: 30px;
+        position: absolute; top: -15px; right: -15px; font-size: 40px;
         z-index: 100; filter: drop-shadow(0 0 5px gold);
         animation: bounce 0.5s infinite alternate;
     }
     @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.2); } }
 
+    .card.revelada { width: 155px; font-size: 0.7rem; border-width: 3px; }
+    .card.revelada img { height: 70px; }
     .card.ganadora { border-color: #ffca28; box-shadow: 0 0 15px gold; }
     .empate-border { border-color: var(--accent) !important; }
 
@@ -144,12 +130,11 @@
         background: rgba(255,255,255,0.7); display: flex;
         justify-content: center; align-items: center; z-index: 10;
         border-radius: 10px; color: #000 !important; font-weight: bold;
-        text-align: center; font-size: 0.8rem;
     }
 
-    /* --- CHAT ADAPTABLE --- */
+    /* --- CHAT --- */
     #chat-container {
-        width: 95%; /* <--- El chat ya no tiene ancho fijo */
+        width: 100%;
         max-width: 350px;
         background: rgba(0,0,0,0.4);
         border-radius: 15px;
@@ -158,7 +143,7 @@
         border: 1px solid rgba(255,255,255,0.1);
     }
     #lista-mensajes {
-        height: 100px;
+        height: 120px;
         overflow-y: auto;
         font-size: 0.85rem;
         margin-bottom: 8px;
@@ -166,7 +151,7 @@
     }
     .msg { margin-bottom: 4px; line-height: 1.2; }
     .chat-input-area { display: flex; gap: 5px; }
-    #inputChat { flex-grow: 1; margin: 0; width: auto; font-size: 16px; color: #000; }
+    #inputChat { flex-grow: 1; margin: 0; width: auto; font-size: 0.8rem; color: #000; }
 </style>
 </head>
 <body>
