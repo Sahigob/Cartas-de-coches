@@ -2,157 +2,185 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Supercars Battle - Duelo de Cartas</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-   <style>
-    :root {
-        --primary: #e63946;
-        --secondary: #1d3557;
-        --light: #f1faee;
-        --accent: #a8dadc;
-    }
+    <style>
+        /* --- VARIABLES --- */
+        :root {
+            --primary: #e63946;
+            --secondary: #1d3557;
+            --light: #f1faee;
+            --accent: #a8dadc;
+            --gold: #ffca28;
+        }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+        /* --- RESET PARA MÓVIL --- */
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            touch-action: manipulation; /* Mejora la respuesta táctil */
+        }
 
-    body {
-        font-family: 'Segoe UI', sans-serif;
-        background-color: var(--secondary);
-        color: var(--light);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 100vh;
-        padding: 10px;
-    }
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--secondary);
+            color: var(--light);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 10px;
+            overflow-x: hidden; /* Prohíbe el scroll lateral */
+        }
 
-    h1 { font-size: 1.2rem; margin: 10px 0; text-transform: uppercase; }
+        h1 { font-size: 1.1rem; margin: 10px 0; text-transform: uppercase; letter-spacing: 1px; }
 
-    /* --- MENÚS --- */
-    #menu {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 15px;
-        border-radius: 15px;
-        width: 100%;
-        max-width: 350px;
-        text-align: center;
-        margin-bottom: 10px;
-    }
+        /* --- MENÚS ADAPTABLES --- */
+        #menu {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 15px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
 
-    input { padding: 8px; border-radius: 5px; border: none; width: 100px; margin: 5px; color: #000; }
-    
-    button {
-        padding: 10px 15px;
-        border: none;
-        border-radius: 8px;
-        background-color: var(--primary);
-        color: white;
-        font-weight: bold;
-        cursor: pointer;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-    }
+        input { 
+            padding: 10px; 
+            border-radius: 8px; 
+            border: none; 
+            width: 90px; 
+            margin: 5px; 
+            font-size: 16px; /* Evita que iOS haga zoom al hacer focus */
+            color: #000; 
+        }
+        
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 8px;
+            background-color: var(--primary);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
 
-    #infoPartida {
-        font-size: 0.9rem;
-        margin-bottom: 10px;
-        background: var(--primary);
-        padding: 5px 20px;
-        border-radius: 20px;
-        font-weight: bold;
-    }
+        #infoPartida {
+            font-size: 0.8rem;
+            margin-bottom: 10px;
+            background: var(--primary);
+            padding: 6px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
 
-    /* --- CARTAS --- */
-    #cartaJugador {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
-        width: 100%;
-    }
+        /* --- CONTENEDOR DE CARTAS --- */
+        #cartaJugador {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            max-width: 100%;
+        }
 
-    .card {
-        background: white;
-        color: #333;
-        width: 92vw;
-        max-width: 320px;
-        padding: 10px;
-        border-radius: 15px;
-        border: 5px solid #fff;
-        position: relative;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-    }
+        /* --- DISEÑO DE LA CARTA --- */
+        .card {
+            background: white !important;
+            color: #333;
+            width: 95vw; /* Casi todo el ancho del móvil */
+            max-width: 320px;
+            padding: 12px;
+            border-radius: 15px;
+            border: 4px solid #fff;
+            position: relative;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
 
-    .card h2 { font-size: 1rem; text-align: center; margin-bottom: 8px; color: var(--secondary); }
-    .card img { width: 100%; height: 130px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
+        .card h2 { font-size: 0.95rem; text-align: center; margin-bottom: 8px; color: var(--secondary); }
+        .card img { width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
 
-    .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .grid-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
 
-    /* --- EL CAMBIO ESTÁ AQUÍ --- */
-    .stat-btn {
-        display: flex; 
-        flex-direction: column; 
-        align-items: center;
-        background: #f8f9fa; 
-        border: 1px solid #ddd; 
-        padding: 5px 2px;
-        border-radius: 6px; 
-        font-size: 0.7rem; 
-        cursor: pointer;
-        /* Forzamos el color negro para que no herede el blanco del body */
-        color: #000000 !important; 
-    }
+        .stat-btn {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            background: #f8f9fa !important;
+            border: 1px solid #ddd !important;
+            padding: 6px 2px !important;
+            border-radius: 8px !important;
+            font-size: 0.65rem !important;
+            color: #000 !important;
+            cursor: pointer;
+        }
 
-    .stat-btn b { 
-        color: var(--primary) !important; 
-        font-size: 0.85rem; 
-    }
+        .stat-btn b { color: var(--primary) !important; font-size: 0.85rem !important; }
 
-    /* --- DUELO Y EMPATE --- */
-    .duelo-container { position: relative; }
-    .estrella {
-        position: absolute; top: -15px; right: -15px; font-size: 40px;
-        z-index: 100; filter: drop-shadow(0 0 5px gold);
-        animation: bounce 0.5s infinite alternate;
-    }
-    @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.2); } }
+        /* --- MODO DUELO (AJUSTE LADO A LADO) --- */
+        .duelo-container { 
+            position: relative; 
+            width: 47%; /* Para que quepan dos en una fila */
+            max-width: 165px;
+        }
 
-    .card.revelada { width: 155px; font-size: 0.7rem; border-width: 3px; }
-    .card.revelada img { height: 70px; }
-    .card.ganadora { border-color: #ffca28; box-shadow: 0 0 15px gold; }
-    .empate-border { border-color: var(--accent) !important; }
+        .card.revelada { 
+            width: 100%; 
+            padding: 6px; 
+            font-size: 0.65rem; 
+            border-width: 3px; 
+        }
+        
+        .card.revelada h2 { font-size: 0.7rem; margin-bottom: 4px; }
+        .card.revelada img { height: 75px; }
 
-    .bloqueo {
-        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(255,255,255,0.7); display: flex;
-        justify-content: center; align-items: center; z-index: 10;
-        border-radius: 10px; color: #000 !important; font-weight: bold;
-    }
+        .estrella {
+            position: absolute; top: -12px; right: -8px; font-size: 30px;
+            z-index: 100; filter: drop-shadow(0 0 5px gold);
+            animation: bounce 0.5s infinite alternate;
+        }
+        @keyframes bounce { from { transform: scale(1); } to { transform: scale(1.2); } }
 
-    /* --- CHAT --- */
-    #chat-container {
-        width: 100%;
-        max-width: 350px;
-        background: rgba(0,0,0,0.4);
-        border-radius: 15px;
-        margin-top: 20px;
-        padding: 10px;
-        border: 1px solid rgba(255,255,255,0.1);
-    }
-    #lista-mensajes {
-        height: 120px;
-        overflow-y: auto;
-        font-size: 0.85rem;
-        margin-bottom: 8px;
-        color: white;
-    }
-    .msg { margin-bottom: 4px; line-height: 1.2; }
-    .chat-input-area { display: flex; gap: 5px; }
-    #inputChat { flex-grow: 1; margin: 0; width: auto; font-size: 0.8rem; color: #000; }
-</style>
+        .card.ganadora { border-color: var(--gold) !important; box-shadow: 0 0 15px var(--gold); }
+        .empate-border { border-color: var(--accent) !important; }
+
+        .bloqueo {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); display: flex;
+            justify-content: center; align-items: center; z-index: 10;
+            border-radius: 12px; color: #000 !important; font-weight: bold;
+            text-align: center; padding: 10px; font-size: 0.9rem;
+        }
+
+        /* --- CHAT --- */
+        #chat-container {
+            width: 100%;
+            max-width: 350px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 15px;
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        #lista-mensajes {
+            height: 100px;
+            overflow-y: auto;
+            font-size: 0.8rem;
+            margin-bottom: 8px;
+        }
+        .msg { margin-bottom: 4px; padding: 2px 5px; background: rgba(255,255,255,0.05); border-radius: 4px; }
+        .chat-input-area { display: flex; gap: 5px; }
+        #inputChat { flex-grow: 1; margin: 0; width: auto; font-size: 16px; }
+    </style>
 </head>
 <body>
 
@@ -165,7 +193,7 @@
             <button onclick="unirsePartida()">Unirse</button>
         </div>
         <div id="areaCreador" style="display:none;">
-            <p>Esperando jugadores...</p>
+            <p style="font-size: 0.8rem; margin-bottom: 5px;">Esperando jugadores...</p>
             <button onclick="iniciarJuego()" style="background-color: #2a9d8f;">¡EMPEZAR YA!</button>
         </div>
     </div>
@@ -177,8 +205,8 @@
     <div id="chat-container" style="display:none;">
         <div id="lista-mensajes"></div>
         <div class="chat-input-area">
-            <input type="text" id="inputChat" placeholder="Escribe un mensaje...">
-            <button onclick="enviarMensaje()">Enviar</button>
+            <input type="text" id="inputChat" placeholder="Mensaje...">
+            <button onclick="enviarMensaje()">OK</button>
         </div>
     </div>
 
