@@ -116,9 +116,12 @@ button:active{transform:translateY(4px);box-shadow:0 1px 0 #b3125f}
 @keyframes win{40%{transform:scale(1.12) rotate(2deg)}}
 .empate-border{box-shadow:0 0 0 5px var(--green),0 0 30px var(--green)!important}
 .bloqueo{
-  position:absolute;inset:0;z-index:10;display:flex;justify-content:center;align-items:center;text-align:center;
-  padding:20px;border-radius:18px;font-weight:700;font-size:1.2rem;color:var(--ink)!important;
-  background:rgba(255,255,255,.88)!important;backdrop-filter:blur(3px);
+  position:absolute;inset:0;z-index:10;display:flex;justify-content:center;align-items:flex-end;text-align:center;
+  padding:0 12px 15px;border-radius:18px;font-weight:700;font-size:1.05rem;
+  color:#fff!important;-webkit-text-fill-color:#fff!important;text-shadow:0 2px 3px rgba(0,0,0,.6);
+  /* card almost fully visible; only a dark strip at the bottom holds the text */
+  background:linear-gradient(to top,rgba(27,11,74,.92) 0 56px,rgba(27,11,74,.06) 56px 100%)!important;
+  backdrop-filter:none!important;
 }
 
 /* CHAT (floating, never needs scrolling) */
@@ -129,7 +132,7 @@ button:active{transform:translateY(4px);box-shadow:0 1px 0 #b3125f}
 }
 #chat-badge{
   position:absolute;top:-6px;right:-6px;min-width:26px;height:26px;border-radius:13px;padding:0 6px;
-  background:var(--pink);color:#fff;font-size:.9rem;line-height:26px;border:3px solid #fff;display:none;
+  background:#ff1744;color:#fff;font-size:.9rem;line-height:26px;border:3px solid #fff;display:none;
   animation:pulse .8s infinite;
 }
 #chat-panel{
@@ -218,20 +221,27 @@ button:active{transform:translateY(4px);box-shadow:0 1px 0 #b3125f}
   document.getElementById('chat-close').onclick=()=>open(false);
   toast.onclick=()=>open(true);
 
-  new MutationObserver(()=>{
-    const n=list.children.length;
-    if(prev===null){prev=n;return;}
-    if(n>prev){
-      const last=list.lastElementChild;
-      const mine=last.textContent.trim().startsWith('TÚ');
-      if(!mine&&!box.classList.contains('open')){
-        unread+=n-prev;badge.textContent=unread;badge.style.display='block';
-        toast.textContent='💬 '+last.textContent;toast.classList.add('show');
-        clearTimeout(timer);timer=setTimeout(()=>toast.classList.remove('show'),4000);
-      }
-    }
-    prev=n;
-  }).observe(list,{childList:true});
+  // Listen to Firebase directly: every NEW message from another player
+  // opens the chat (if AUTO_ABRIR) and/or shows a red counter on the 💬 button.
+  const AUTO_ABRIR = true;   // put false if you only want the red number + pop-up
+  let attached = false;
+  function plain(t){return new DOMParser().parseFromString(t||'','text/html').body.textContent;}
+  function nuevo(m){
+    if(m.autor===jugadorId) return;                 // my own messages: no alert
+    if(box.classList.contains('open')) return;      // already reading the chat
+    if(AUTO_ABRIR){ open(true); return; }
+    unread++; badge.textContent=unread; badge.style.display='block';
+    toast.textContent='💬 '+m.autor+': '+plain(m.texto); toast.classList.add('show');
+    clearTimeout(timer); timer=setTimeout(()=>toast.classList.remove('show'),4000);
+  }
+  const wait=setInterval(()=>{
+    if(attached||typeof partidaId==='undefined'||!partidaId||!jugadorId) return;
+    attached=true; clearInterval(wait);
+    const ref=db.ref('partidas/'+partidaId+'/mensajes');
+    let ready=false;
+    ref.on('child_added',snap=>{ if(ready) nuevo(snap.val()); });
+    ref.once('value',()=>{ ready=true; });   // old messages are ignored
+  },400);
 })();
 
 // Safer chat: escapes HTML before sending, so nobody can break the page with <tags>.
